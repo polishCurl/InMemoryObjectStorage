@@ -32,20 +32,34 @@ docker image prune -a
 docker container prune -y
 ```
 
+## Building
+This project uses [Bazel](https://bazel.build/) build system.
+
+To build the main object store service binary, run:
+```
+bazel build //:object_store 
+```
+
 ## Useful commands
-Execute all unit tests:
-```
-bazel test //...
-```
-
-Generate code coverage report (located in `genhtml/index.html`):
-```
-bazel coverage //...
-genhtml bazel-out/_coverage/_coverage_report.dat -o genhtml
-```
-
 Generate Doxygen docummentation (located in `doxydoc/html/index.html`):
 ```
 doxygen
 ```
 
+
+## Testing
+### Unit tests
+Unit tests were implemented using the [GoogleTest](https://github.com/google/googletest) framework.
+
+Build and execute all unit tests:
+```
+bazel test //...
+```
+
+Generate code coverage report using the _lcov_ and _genhtml_:
+```
+bazel coverage //...
+genhtml bazel-out/_coverage/_coverage_report.dat -o genhtml
+```
+
+The top-level coverage report will be placed in `genhtml/index.html`
