@@ -1,8 +1,8 @@
-#include "memory_store.hpp"
+#include "memory_fs.hpp"
 
-using namespace store;
+using namespace fs;
 
-std::pair<Result, const File&> MemoryStore::get(
+std::pair<Result, const File&> MemoryFs::get(
     const std::string& path) const noexcept {
   if (!exists(path)) {
     return {Result::kFileNotFound, {}};
@@ -11,7 +11,7 @@ std::pair<Result, const File&> MemoryStore::get(
   return {Result::kSuccess, fs_.at(path)};
 }
 
-Result MemoryStore::put(const std::string& path, const File& file) noexcept {
+Result MemoryFs::add(const std::string& path, const File& file) noexcept {
   if (exists(path)) {
     return Result::kAlreadyExists;
   }
@@ -20,7 +20,7 @@ Result MemoryStore::put(const std::string& path, const File& file) noexcept {
   return Result::kSuccess;
 }
 
-FileList MemoryStore::list() const noexcept {
+FileList MemoryFs::list() const noexcept {
   FileList list;
 
   for (const auto& file : fs_) {
@@ -30,10 +30,10 @@ FileList MemoryStore::list() const noexcept {
   return list;
 }
 
-Result MemoryStore::remove(const std::string& path) noexcept {
+Result MemoryFs::remove(const std::string& path) noexcept {
   return fs_.erase(path) == 1 ? Result::kSuccess : Result::kFileNotFound;
 }
 
-bool MemoryStore::exists(const std::string& path) const {
+bool MemoryFs::exists(const std::string& path) const {
   return fs_.find(path) != fs_.end();
 }

@@ -1,11 +1,11 @@
-#ifndef STORE_SRC_MEMORY_STORE_MEMORY_STORE_HPP
-#define STORE_SRC_MEMORY_STORE_MEMORY_STORE_HPP
+#ifndef FILESYSTEM_MEMORY_FS_SRC_MEMORY_FS_HPP
+#define FILESYSTEM_MEMORY_FS_SRC_MEMORY_FS_HPP
 
 #include <unordered_map>
 
-#include "store/file_store.hpp"
+#include "filesystem/ifilesystem.hpp"
 
-namespace store {
+namespace fs {
 
 /**
  * \brief Filesystem representation.
@@ -18,29 +18,29 @@ namespace store {
  *
  * Additionally, there is no requirement on the order of files returned.
  */
-using FileSystem = std::unordered_map<std::string, File>;
+using Fs = std::unordered_map<std::string, File>;
 
 /**
- * \brief In-memory file store.
+ * \brief In-memory filesystem.
  *
- * \par Non-persistent file store.
+ * \par Non-persistent filesystem.
  */
-class MemoryStore : public FileStore {
+class MemoryFs : public IFilesystem {
  public:
-  MemoryStore() = default;
+  MemoryFs() = default;
 
-  // MemoryStore is non-copyable and non-moveable because the semantics of
+  // MemoryFs is non-copyable and non-moveable because the semantics of
   // these operations would not be trivial. Moveover, there is no req to allow
   // for these operations and copying entire memory stores would have been
   // expensive.
-  MemoryStore(const MemoryStore& other) = delete;
-  MemoryStore(MemoryStore&& other) = delete;
-  MemoryStore& operator=(const MemoryStore& other) = delete;
-  MemoryStore& operator=(MemoryStore&&) = delete;
+  MemoryFs(const MemoryFs& other) = delete;
+  MemoryFs(MemoryFs&& other) = delete;
+  MemoryFs& operator=(const MemoryFs& other) = delete;
+  MemoryFs& operator=(MemoryFs&&) = delete;
 
   std::pair<Result, const File&> get(
       const std::string& path) const noexcept override;
-  Result put(const std::string& path, const File& file) noexcept override;
+  Result add(const std::string& path, const File& file) noexcept override;
   FileList list() const noexcept override;
   Result remove(const std::string& path) noexcept override;
 
@@ -54,9 +54,9 @@ class MemoryStore : public FileStore {
    */
   bool exists(const std::string& path) const;
 
-  FileSystem fs_;  //*!< Mapping from paths to files.
+  Fs fs_;  //*!< Mapping from paths to files.
 };
 
-}  // namespace store
+}  // namespace fs
 
-#endif  // STORE_SRC_MEMORY_STORE_MEMORY_STORE_HPP
+#endif  // FILESYSTEM_MEMORY_FS_SRC_MEMORY_FS_HPP

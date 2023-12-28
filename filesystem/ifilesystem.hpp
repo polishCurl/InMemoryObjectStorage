@@ -1,16 +1,16 @@
-#ifndef STORE_FILE_STORE_HPP
-#define STORE_FILE_STORE_HPP
+#ifndef FILESYSTEM_FILESYSTEM_HPP
+#define FILESYSTEM_FILESYSTEM_HPP
 
 #include <string>
 #include <vector>
 
-namespace store {
+namespace fs {
 
 /**
- * \brief File store operation result.
+ * \brief Filesystem operation result.
  */
 enum class Result {
-  kSuccess,        //*!< File store operation completed successfully.
+  kSuccess,        //*!< Filesystem operation completed successfully.
   kFileNotFound,   //*!< Specified file was not found.
   kAlreadyExists,  //*!< File already exists at the specified path.
 };
@@ -26,11 +26,11 @@ using File = std::vector<char>;  // std::vector guarantees contiguous memory
 using FileList = std::vector<std::string>;
 
 /**
- * \brief File store interface
+ * \brief Filesystem interface
  */
-class FileStore {
+class IFilesystem {
  public:
-  virtual ~FileStore() = default;
+  virtual ~IFilesystem() = default;
 
   /**
    * \brief Get file from the specified path.
@@ -43,14 +43,14 @@ class FileStore {
       const std::string& path) const noexcept = 0;
 
   /**
-   * \brief Put file at the specified path.
+   * \brief Add file at the specified path.
    *
-   * \param path Path at which to put the file.
-   * \param file File to put.
+   * \param path Path at which to add the file.
+   * \param file File to add.
    *
-   * \return Result of the put operation.
+   * \return Result of the add operation.
    */
-  virtual Result put(const std::string& path, const File& file) noexcept = 0;
+  virtual Result add(const std::string& path, const File& file) noexcept = 0;
 
   /**
    * \brief List all stored objects.
@@ -69,6 +69,6 @@ class FileStore {
   virtual Result remove(const std::string& path) noexcept = 0;
 };
 
-}  // namespace store
+}  // namespace fs
 
-#endif  // STORE_FILE_STORE_HPP
+#endif  // FILESYSTEM_FILESYSTEM_HPP
