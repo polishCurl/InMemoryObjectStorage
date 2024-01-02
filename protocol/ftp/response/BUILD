@@ -4,7 +4,6 @@ cc_library(
         "src/ftp_response.hpp",
     ],
     strip_include_prefix = "",
-    deps = ["//protocol:response_interface"],
 )
 
 cc_test(

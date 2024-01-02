@@ -1,7 +1,6 @@
 #include "http_parser.hpp"
 
 #include <iostream>
-#include <vector>
 
 namespace protocol {
 

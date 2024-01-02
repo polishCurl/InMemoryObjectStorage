@@ -3,8 +3,6 @@
 
 #include <string>
 
-#include "protocol/iresponse.hpp"
-
 namespace protocol {
 
 namespace ftp {
@@ -63,7 +61,7 @@ enum class FtpReplyCode {
 /**
  * \brief FTP reply.
  */
-class FtpResponse : public IResponse {
+class FtpResponse {
  public:
   /**
    * \brief Create FTP reply with the given code and message.
@@ -81,7 +79,12 @@ class FtpResponse : public IResponse {
    */
   FtpResponse(FtpReplyCode code) noexcept : code_{code}, text_{""} {}
 
-  inline operator std::string() const override {
+  /**
+   * \brief Convert FTP reply to string.
+   *
+   * \return String representation of FTP reply.
+   */
+  inline operator std::string() const {
     return std::to_string(static_cast<int>(code_)) + ' ' + text_ + "\r\n";
   }
 

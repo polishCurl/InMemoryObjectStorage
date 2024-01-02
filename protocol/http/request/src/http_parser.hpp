@@ -2,18 +2,55 @@
 #define PROTOCOL_HTTP_REQUEST_SRC_HTTP_PARSER_HPP
 
 #include <sstream>
+#include <string>
 #include <unordered_map>
-
-#include "protocol/http/request/ihttp_parser.hpp"
+#include <vector>
 
 namespace protocol {
 
 namespace http {
 
 /**
- * \brief HTTP request parser implementation.
+ * \brief HTTP versions supported.
  */
-class HttpParser : public IHttpParser {
+enum class HttpVersion {
+  HTTP_1_1,
+  Unrecognized,
+};
+
+/**
+ * \brief HTTP methods supported.
+ */
+enum class HttpMethod {
+  Get,
+  Put,
+  Delete,
+  Unrecognized,
+};
+
+/**
+ * \brief HTTP resource representation.
+ */
+struct HttpResource {
+  const char* buffer;  //*!< HttpResource buffer
+  std::size_t size;    //*!< HttpResource buffer size
+};
+
+/**
+ * \brief Parsed HTTP request.
+ */
+struct HttpRequest {
+  bool valid;             //*!< Is HTTP request is valid? (successfully parsed)
+  HttpVersion version;    //*!< HTTP version
+  HttpMethod method;      //*!< HTTP method
+  std::string uri;        //*!< URI
+  HttpResource resource;  //*!< HTTP request body (the resource), if present
+};
+
+/**
+ * \brief HTTP request parser.
+ */
+class HttpParser {
  public:
   /**
    * \brief Create HTTP parser from raw HTTP buffer
@@ -29,7 +66,14 @@ class HttpParser : public IHttpParser {
   HttpParser& operator=(const HttpParser& other) = delete;
   HttpParser& operator=(HttpParser&&) = delete;
 
-  inline const HttpRequest& parse() const noexcept override { return http_; }
+  /**
+   * \brief Parse HTTP request.
+   *
+   * Extract relevant information from HTTP request.
+   *
+   * \return Parsed HTTP request.
+   */
+  inline const HttpRequest& parse() const noexcept { return http_; }
 
  protected:
   /**
