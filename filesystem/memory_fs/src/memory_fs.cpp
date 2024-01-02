@@ -5,19 +5,19 @@ using namespace fs;
 std::pair<Result, const File&> MemoryFs::get(
     const std::string& path) const noexcept {
   if (!exists(path)) {
-    return {Result::kFileNotFound, {}};
+    return {Result::FileNotFound, {}};
   }
 
-  return {Result::kSuccess, fs_.at(path)};
+  return {Result::Success, fs_.at(path)};
 }
 
 Result MemoryFs::add(const std::string& path, const File& file) noexcept {
   if (exists(path)) {
-    return Result::kAlreadyExists;
+    return Result::AlreadyExists;
   }
 
   fs_[path] = file;
-  return Result::kSuccess;
+  return Result::Success;
 }
 
 FileList MemoryFs::list() const noexcept {
@@ -31,7 +31,7 @@ FileList MemoryFs::list() const noexcept {
 }
 
 Result MemoryFs::remove(const std::string& path) noexcept {
-  return fs_.erase(path) == 1 ? Result::kSuccess : Result::kFileNotFound;
+  return fs_.erase(path) == 1 ? Result::Success : Result::FileNotFound;
 }
 
 bool MemoryFs::exists(const std::string& path) const {
