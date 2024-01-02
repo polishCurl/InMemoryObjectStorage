@@ -56,9 +56,8 @@ class HttpParser {
    * \brief Create HTTP parser from raw HTTP buffer
    *
    * \param buffer Input buffer containing HTTP request.
-   * \param size Size of buffer.
    */
-  HttpParser(const char* buffer, std::size_t size);
+  HttpParser(const std::string& buffer);
 
   // For now, I don't see the need for providing copy and move semantics
   HttpParser(const HttpParser& other) = delete;

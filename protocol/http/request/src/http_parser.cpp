@@ -6,13 +6,13 @@ namespace protocol {
 
 namespace http {
 
-HttpParser::HttpParser(const char* buffer, std::size_t size)
+HttpParser::HttpParser(const std::string& buffer)
     : http_{false,
             HttpVersion::Unrecognized,
             HttpMethod::Unrecognized,
             "",
             {nullptr, 0}} {
-  if (!buffer) {
+  if (buffer.empty()) {
     return;
   }
 

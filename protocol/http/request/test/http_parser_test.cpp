@@ -5,7 +5,7 @@
 using namespace protocol::http;
 
 TEST(HttpParserTest, InitialState) {
-  HttpParser parser{nullptr, 0};
+  HttpParser parser{""};
   const auto& http = parser.parse();
   EXPECT_FALSE(http.valid);
   EXPECT_EQ(HttpVersion::Unrecognized, http.version);
@@ -25,7 +25,7 @@ TEST(HttpParserTest, Put1) {
       "\r\n"
       "text1=sase";
 
-  HttpParser parser{http_header, sizeof(http_header)};
+  HttpParser parser{http_header};
   const auto& http = parser.parse();
   EXPECT_TRUE(http.valid);
   EXPECT_EQ(HttpVersion::HTTP_1_1, http.version);
@@ -46,7 +46,7 @@ TEST(HttpParserTest, Put2) {
       "\r\n"
       "someData";
 
-  HttpParser parser{http_header, sizeof(http_header)};
+  HttpParser parser{http_header};
   const auto& http = parser.parse();
   EXPECT_TRUE(http.valid);
   EXPECT_EQ(HttpVersion::HTTP_1_1, http.version);
@@ -73,7 +73,7 @@ TEST(HttpParserTest, Get1) {
       "Accept-Encoding: gzip, deflate\r\n"
       "\r\n";
 
-  HttpParser parser{http_header, sizeof(http_header)};
+  HttpParser parser{http_header};
   const auto& http = parser.parse();
   EXPECT_TRUE(http.valid);
   EXPECT_EQ(HttpVersion::HTTP_1_1, http.version);
@@ -88,7 +88,7 @@ TEST(HttpParserTest, Get2) {
       "GET /index.html HTTP/1.1\r\n"
       "\r\n";
 
-  HttpParser parser{http_header, sizeof(http_header)};
+  HttpParser parser{http_header};
   const auto& http = parser.parse();
   EXPECT_TRUE(http.valid);
   EXPECT_EQ(HttpVersion::HTTP_1_1, http.version);
@@ -105,7 +105,7 @@ TEST(HttpParserTest, Delete) {
       "Authorization: Bearer mt0dgHmLJMVQhvjpNXDyA83vA_PxH23Y\r\n"
       "\r\n";
 
-  HttpParser parser{http_header, sizeof(http_header)};
+  HttpParser parser{http_header};
   const auto& http = parser.parse();
   EXPECT_TRUE(http.valid);
   EXPECT_EQ(HttpVersion::HTTP_1_1, http.version);
@@ -120,7 +120,7 @@ TEST(HttpParserTest, VersionNotRecognised) {
       "GET /index.html HTTP/2.0\r\n"
       "\r\n";
 
-  HttpParser parser{http_header, sizeof(http_header)};
+  HttpParser parser{http_header};
   const auto& http = parser.parse();
   EXPECT_FALSE(http.valid);
   EXPECT_EQ(HttpVersion::Unrecognized, http.version);
@@ -131,7 +131,7 @@ TEST(HttpParserTest, MethodNotRecognised) {
       "POST /index.html HTTP/1.1\r\n"
       "\r\n";
 
-  HttpParser parser{http_header, sizeof(http_header)};
+  HttpParser parser{http_header};
   const auto& http = parser.parse();
   EXPECT_FALSE(http.valid);
   EXPECT_EQ(HttpMethod::Unrecognized, http.method);
