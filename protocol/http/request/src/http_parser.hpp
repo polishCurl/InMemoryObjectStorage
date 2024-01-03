@@ -13,7 +13,7 @@ namespace request {
  * \brief HTTP versions supported.
  */
 enum class HttpVersion {
-  HTTP_1_1,
+  Http_1_1,
   Unrecognized,
 };
 

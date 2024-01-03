@@ -25,7 +25,7 @@ TEST(HttpParserTest, Put1) {
 
   const auto http = parseHttp(http_header);
   EXPECT_TRUE(http.valid);
-  EXPECT_EQ(HttpVersion::HTTP_1_1, http.version);
+  EXPECT_EQ(HttpVersion::Http_1_1, http.version);
   EXPECT_EQ(HttpMethod::Put, http.method);
   EXPECT_EQ("/xampp/tests/file/check.php", http.uri);
   EXPECT_EQ("text1=sase", http.resource);
@@ -43,7 +43,7 @@ TEST(HttpParserTest, Put2) {
 
   const auto http = parseHttp(http_header);
   EXPECT_TRUE(http.valid);
-  EXPECT_EQ(HttpVersion::HTTP_1_1, http.version);
+  EXPECT_EQ(HttpVersion::Http_1_1, http.version);
   EXPECT_EQ(HttpMethod::Put, http.method);
   EXPECT_EQ("/test", http.uri);
   EXPECT_EQ("someData", http.resource);
@@ -67,7 +67,7 @@ TEST(HttpParserTest, Get1) {
 
   const auto http = parseHttp(http_header);
   EXPECT_TRUE(http.valid);
-  EXPECT_EQ(HttpVersion::HTTP_1_1, http.version);
+  EXPECT_EQ(HttpVersion::Http_1_1, http.version);
   EXPECT_EQ(HttpMethod::Get, http.method);
   EXPECT_EQ("/", http.uri);
   EXPECT_TRUE(http.resource.empty());
@@ -80,7 +80,7 @@ TEST(HttpParserTest, Get2) {
 
   const auto http = parseHttp(http_header);
   EXPECT_TRUE(http.valid);
-  EXPECT_EQ(HttpVersion::HTTP_1_1, http.version);
+  EXPECT_EQ(HttpVersion::Http_1_1, http.version);
   EXPECT_EQ(HttpMethod::Get, http.method);
   EXPECT_EQ("/index.html", http.uri);
   EXPECT_TRUE(http.resource.empty());
@@ -95,7 +95,7 @@ TEST(HttpParserTest, Delete) {
 
   const auto http = parseHttp(http_header);
   EXPECT_TRUE(http.valid);
-  EXPECT_EQ(HttpVersion::HTTP_1_1, http.version);
+  EXPECT_EQ(HttpVersion::Http_1_1, http.version);
   EXPECT_EQ(HttpMethod::Delete, http.method);
   EXPECT_EQ("/echo/delete/json", http.uri);
   EXPECT_TRUE(http.resource.empty());

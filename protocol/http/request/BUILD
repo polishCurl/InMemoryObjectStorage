@@ -7,6 +7,7 @@ cc_library(
         "src/http_parser.hpp",
     ],
     strip_include_prefix = "",
+    deps = ["//utils"],
 )
 
 cc_test(
