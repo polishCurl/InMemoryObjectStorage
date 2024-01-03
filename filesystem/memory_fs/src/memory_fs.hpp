@@ -18,7 +18,7 @@ namespace fs {
  *
  * Additionally, there is no requirement on the order of files returned.
  */
-using Fs = std::unordered_map<std::string, File>;
+using Fs = std::unordered_map<std::string_view, File>;
 
 /**
  * \brief In-memory filesystem.
@@ -39,10 +39,10 @@ class MemoryFs : public IFilesystem {
   MemoryFs& operator=(MemoryFs&&) = delete;
 
   std::pair<Result, const File&> get(
-      const std::string& path) const noexcept override;
-  Result add(const std::string& path, const File& file) noexcept override;
+      std::string_view path) const noexcept override;
+  Result add(std::string_view path, const File& file) noexcept override;
   FileList list() const noexcept override;
-  Result remove(const std::string& path) noexcept override;
+  Result remove(std::string_view path) noexcept override;
 
  protected:
   /**
@@ -52,7 +52,7 @@ class MemoryFs : public IFilesystem {
    *
    * \return True if file exists, false otherwise.
    */
-  bool exists(const std::string& path) const;
+  bool exists(std::string_view path) const;
 
   Fs fs_;  //*!< Mapping from paths to files.
 };

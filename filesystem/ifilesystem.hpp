@@ -40,7 +40,7 @@ class IFilesystem {
    * \return Operation result and the file (if successfull).
    */
   virtual std::pair<Result, const File&> get(
-      const std::string& path) const noexcept = 0;
+      std::string_view path) const noexcept = 0;
 
   /**
    * \brief Add file at the specified path.
@@ -50,7 +50,7 @@ class IFilesystem {
    *
    * \return Result of the add operation.
    */
-  virtual Result add(const std::string& path, const File& file) noexcept = 0;
+  virtual Result add(std::string_view path, const File& file) noexcept = 0;
 
   /**
    * \brief List all stored objects.
@@ -66,7 +66,7 @@ class IFilesystem {
    *
    * \return Result of the remove operation.
    */
-  virtual Result remove(const std::string& path) noexcept = 0;
+  virtual Result remove(std::string_view path) noexcept = 0;
 };
 
 }  // namespace fs

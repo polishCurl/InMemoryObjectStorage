@@ -3,7 +3,7 @@
 using namespace fs;
 
 std::pair<Result, const File&> MemoryFs::get(
-    const std::string& path) const noexcept {
+    std::string_view path) const noexcept {
   if (!exists(path)) {
     return {Result::FileNotFound, {}};
   }
@@ -11,7 +11,7 @@ std::pair<Result, const File&> MemoryFs::get(
   return {Result::Success, fs_.at(path)};
 }
 
-Result MemoryFs::add(const std::string& path, const File& file) noexcept {
+Result MemoryFs::add(std::string_view path, const File& file) noexcept {
   if (exists(path)) {
     return Result::AlreadyExists;
   }
@@ -30,10 +30,10 @@ FileList MemoryFs::list() const noexcept {
   return list;
 }
 
-Result MemoryFs::remove(const std::string& path) noexcept {
+Result MemoryFs::remove(std::string_view path) noexcept {
   return fs_.erase(path) == 1 ? Result::Success : Result::FileNotFound;
 }
 
-bool MemoryFs::exists(const std::string& path) const {
+bool MemoryFs::exists(std::string_view path) const {
   return fs_.find(path) != fs_.end();
 }
