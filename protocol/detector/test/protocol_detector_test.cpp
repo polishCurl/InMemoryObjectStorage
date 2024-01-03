@@ -2,7 +2,7 @@
 
 #include "gtest/gtest.h"
 
-using namespace protocol;
+using namespace protocol::detector;
 
 TEST(ProtocolDetectorTest, HttpPut) {
   char http_header[] =
@@ -14,7 +14,7 @@ TEST(ProtocolDetectorTest, HttpPut) {
       "\r\n"
       "text1=sase";
 
-  EXPECT_EQ(AppLayerProtocol::Http, ProtocolDetector{http_header}.detect());
+  EXPECT_EQ(AppLayerProtocol::Http, detectProtocol(http_header));
 }
 
 TEST(ProtocolDetectorTest, HttpGet) {
@@ -33,7 +33,7 @@ TEST(ProtocolDetectorTest, HttpGet) {
       "Accept-Encoding: gzip, deflate\r\n"
       "\r\n";
 
-  EXPECT_EQ(AppLayerProtocol::Http, ProtocolDetector{http_header}.detect());
+  EXPECT_EQ(AppLayerProtocol::Http, detectProtocol(http_header));
 }
 
 TEST(ProtocolDetectorTest, HttpGet2) {
@@ -41,20 +41,20 @@ TEST(ProtocolDetectorTest, HttpGet2) {
       "GET /index.html HTTP/2.0\r\n"
       "\r\n";
 
-  EXPECT_EQ(AppLayerProtocol::Http, ProtocolDetector{http_header}.detect());
+  EXPECT_EQ(AppLayerProtocol::Http, detectProtocol(http_header));
 }
 
 TEST(ProtocolDetectorTest, FtpUser) {
   char ftp_header[] = "USER csanders\r\n";
-  EXPECT_EQ(AppLayerProtocol::Ftp, ProtocolDetector{ftp_header}.detect());
+  EXPECT_EQ(AppLayerProtocol::Ftp, detectProtocol(ftp_header));
 }
 
 TEST(ProtocolDetectorTest, FtpPwd) {
   char ftp_header[] = "PWD\r\n";
-  EXPECT_EQ(AppLayerProtocol::Ftp, ProtocolDetector{ftp_header}.detect());
+  EXPECT_EQ(AppLayerProtocol::Ftp, detectProtocol(ftp_header));
 }
 
 TEST(ProtocolDetectorTest, FtpRetr) {
   char ftp_header[] = "RETR Music.mp3\r\n";
-  EXPECT_EQ(AppLayerProtocol::Ftp, ProtocolDetector{ftp_header}.detect());
+  EXPECT_EQ(AppLayerProtocol::Ftp, detectProtocol(ftp_header));
 }
