@@ -10,6 +10,8 @@ namespace protocol {
 
 namespace http {
 
+namespace request {
+
 /**
  * \brief HTTP versions supported.
  */
@@ -48,71 +50,17 @@ struct HttpRequest {
 };
 
 /**
- * \brief HTTP request parser.
+ * \brief Parse HTTP request.
+ *
+ * Extract relevant information from HTTP request.
+ *
+ * \param buffer Input buffer containing HTTP request.
+ *
+ * \return Parsed HTTP request.
  */
-class HttpParser {
- public:
-  /**
-   * \brief Create HTTP parser from raw HTTP buffer
-   *
-   * \param buffer Input buffer containing HTTP request.
-   */
-  HttpParser(const std::string& buffer);
+HttpRequest parseHttp(const std::string& buffer) noexcept;
 
-  // For now, I don't see the need for providing copy and move semantics
-  HttpParser(const HttpParser& other) = delete;
-  HttpParser(HttpParser&& other) = delete;
-  HttpParser& operator=(const HttpParser& other) = delete;
-  HttpParser& operator=(HttpParser&&) = delete;
-
-  /**
-   * \brief Parse HTTP request.
-   *
-   * Extract relevant information from HTTP request.
-   *
-   * \return Parsed HTTP request.
-   */
-  inline const HttpRequest& parse() const noexcept { return http_; }
-
- protected:
-  /**
-   * \brief Parse HTTP request line.
-   *
-   * Extract relevant data from HTTP request line (1st line).
-   *
-   * \param ss Input string stream which contains HTTP request.
-   */
-  void parseRequestLine(std::istringstream& ss);
-
-  /**
-   * \brief Parse HTTP content length.
-   *
-   * \param ss Input string stream which contains HTTP request.
-   */
-  void parseContentLength(std::istringstream& ss);
-
-  /**
-   * \brief Split line into tokens based on a delimiter
-   *
-   * Extract relevant data from HTTP request line (1st line).
-   *
-   * \param line Line to split.
-   * \param delimeter Character on based on which to split the string.
-   *
-   * \return List of tokens.
-   */
-  static std::vector<std::string_view> split(const std::string& line,
-                                             char delimeter);
-
-  HttpRequest http_;  //*!< Information extracted from HTTP request.
-
-  /// Mapping from HTTP method name to the corresponding type.
-  static const std::unordered_map<std::string_view, HttpMethod> kMethodMap;
-
-  /// Mapping from HTTP version name to the corresponding type.
-  static const std::unordered_map<std::string_view, HttpVersion> kVersionMap;
-};
-
+}  // namespace request
 }  // namespace http
 }  // namespace protocol
 

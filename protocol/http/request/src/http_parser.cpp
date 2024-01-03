@@ -1,59 +1,23 @@
 #include "http_parser.hpp"
 
-#include <iostream>
-
 namespace protocol {
 
 namespace http {
 
-HttpParser::HttpParser(const std::string& buffer)
-    : http_{false,
-            HttpVersion::Unrecognized,
-            HttpMethod::Unrecognized,
-            "",
-            {nullptr, 0}} {
-  if (buffer.empty()) {
-    return;
-  }
+namespace request {
 
-  try {
-    std::istringstream ss{buffer};
-    parseRequestLine(ss);
+static const std::unordered_map<std::string_view, HttpMethod> kMethodMap = {
+    {"PUT", HttpMethod::Put},
+    {"GET", HttpMethod::Get},
+    {"DELETE", HttpMethod::Delete},
+};
 
-    if (http_.method == HttpMethod::Put) {
-      parseContentLength(ss);
-      http_.resource.buffer = &buffer[ss.tellg()];
-    }
-    http_.valid = true;
-  } catch (std::exception& e) {
-    std::cerr << "Failed to parse: " << buffer << '\n' << e.what() << '\n';
-  }
-}
+static const std::unordered_map<std::string_view, HttpVersion> kVersionMap = {
+    {"HTTP/1.1", HttpVersion::HTTP_1_1},
+};
 
-void HttpParser::parseRequestLine(std::istringstream& ss) {
-  std::string request_line;
-  if (std::getline(ss, request_line, '\n')) {
-    request_line.pop_back();  // Remove CR character
-    const auto tokens = split(request_line, ' ');
-    http_.method = kMethodMap.at(tokens[0]);
-    http_.uri = tokens[1];
-    http_.version = kVersionMap.at(tokens[2]);
-  }
-}
-
-void HttpParser::parseContentLength(std::istringstream& ss) {
-  std::string line;
-  while (std::getline(ss, line, '\n') && (line != "\r")) {
-    if (line.rfind("Content-Lenght", 0) == 0) {
-      line.pop_back();  // Remove CR character
-      const auto tokens = split(line, ' ');
-      http_.resource.size = std::atoi(tokens[1].data());
-    }
-  }
-}
-
-std::vector<std::string_view> HttpParser::split(const std::string& line,
-                                                char delimeter) {
+static std::vector<std::string_view> split(const std::string& line,
+                                           char delimeter) {
   std::vector<std::string_view> tokens;
   std::string_view line_view{line};
   auto end{line_view.find(delimeter)};
@@ -70,17 +34,53 @@ std::vector<std::string_view> HttpParser::split(const std::string& line,
   return tokens;
 }
 
-const std::unordered_map<std::string_view, HttpMethod> HttpParser::kMethodMap =
-    {
-        {"PUT", HttpMethod::Put},
-        {"GET", HttpMethod::Get},
-        {"DELETE", HttpMethod::Delete},
-};
+static void parseRequestLine(std::istringstream& ss, HttpRequest& http) {
+  std::string request_line;
+  if (std::getline(ss, request_line, '\n')) {
+    request_line.pop_back();  // Remove CR character
+    const auto tokens = split(request_line, ' ');
+    http.method = kMethodMap.at(tokens[0]);
+    http.uri = tokens[1];
+    http.version = kVersionMap.at(tokens[2]);
+  }
+}
 
-const std::unordered_map<std::string_view, HttpVersion>
-    HttpParser::kVersionMap = {
-        {"HTTP/1.1", HttpVersion::HTTP_1_1},
-};
+static void parseContentLength(std::istringstream& ss, HttpRequest& http) {
+  std::string line;
+  while (std::getline(ss, line, '\n') && (line != "\r")) {
+    if (line.rfind("Content-Lenght", 0) == 0) {
+      line.pop_back();  // Remove CR character
+      const auto tokens = split(line, ' ');
+      http.resource.size = std::atoi(tokens[1].data());
+    }
+  }
+}
 
+HttpRequest parseHttp(const std::string& buffer) noexcept {
+  HttpRequest http{false,
+                   HttpVersion::Unrecognized,
+                   HttpMethod::Unrecognized,
+                   "",
+                   {nullptr, 0}};
+
+  if (!buffer.empty()) {
+    try {
+      std::istringstream ss{buffer};
+      parseRequestLine(ss, http);
+
+      if (http.method == HttpMethod::Put) {
+        parseContentLength(ss, http);
+        http.resource.buffer = &buffer[ss.tellg()];
+      }
+      http.valid = true;
+    } catch (std::exception& e) {
+      http.valid = false;
+    }
+  }
+
+  return http;
+}
+
+}  // namespace request
 }  // namespace http
 }  // namespace protocol
