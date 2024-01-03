@@ -18,7 +18,7 @@ enum class Result {
 /**
  * \brief File representation.
  */
-using File = std::vector<char>;  // std::vector guarantees contiguous memory
+using File = std::string;
 
 /**
  * \brief List of filenames (paths)

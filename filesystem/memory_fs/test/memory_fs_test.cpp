@@ -31,7 +31,7 @@ TEST(MemoryFsGet, FileNotFound) {
 
 TEST(MemoryFsGet, Success) {
   MemoryFs ms;
-  File file{3, 'z'};
+  File file{"I like trains"};
   ASSERT_EQ(Result::Success, ms.add("/tmp/temp.txt", file));
   const auto retrieved_file = ms.get("/tmp/temp.txt");
   ASSERT_EQ(Result::Success, retrieved_file.first);
