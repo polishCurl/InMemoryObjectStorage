@@ -36,7 +36,7 @@ using HttpResource = std::string_view;
  * \brief Parsed HTTP request.
  */
 struct HttpRequest {
-  bool valid;             //*!< Is HTTP request is valid? (successfully parsed)
+  bool valid;             //*!< Is HTTP request valid? (successfully parsed)
   HttpVersion version;    //*!< HTTP version
   HttpMethod method;      //*!< HTTP method
   std::string uri;        //*!< URI
