@@ -3,6 +3,8 @@
 
 #include <string>
 
+#include "protocol/iserialize.hpp"
+
 namespace protocol {
 
 namespace ftp {
@@ -61,7 +63,7 @@ enum class FtpReplyCode {
 /**
  * \brief FTP reply.
  */
-class FtpResponse {
+class FtpResponse : public ISerialize {
  public:
   /**
    * \brief Create FTP reply with the given code and message.
@@ -84,7 +86,7 @@ class FtpResponse {
    *
    * \return String representation of FTP reply.
    */
-  inline operator std::string() const {
+  inline operator std::string() const override {
     return std::to_string(static_cast<int>(code_)) + ' ' + text_ + "\r\n";
   }
 

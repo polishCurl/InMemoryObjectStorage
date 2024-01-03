@@ -4,6 +4,7 @@ cc_library(
         "src/ftp_response.hpp",
     ],
     strip_include_prefix = "",
+    deps = ["//protocol:serialize_interface"],
 )
 
 cc_test(
