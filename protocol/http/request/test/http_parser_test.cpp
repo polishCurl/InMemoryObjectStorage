@@ -9,9 +9,8 @@ TEST(HttpParserTest, InitialState) {
   EXPECT_FALSE(http.valid);
   EXPECT_EQ(HttpVersion::Unrecognized, http.version);
   EXPECT_EQ(HttpMethod::Unrecognized, http.method);
-  EXPECT_EQ("", http.uri);
-  EXPECT_EQ(nullptr, http.resource.buffer);
-  EXPECT_EQ(0, http.resource.size);
+  EXPECT_TRUE(http.uri.empty());
+  EXPECT_TRUE(http.resource.empty());
 }
 
 TEST(HttpParserTest, Put1) {
@@ -29,9 +28,7 @@ TEST(HttpParserTest, Put1) {
   EXPECT_EQ(HttpVersion::HTTP_1_1, http.version);
   EXPECT_EQ(HttpMethod::Put, http.method);
   EXPECT_EQ("/xampp/tests/file/check.php", http.uri);
-  ASSERT_EQ(10, http.resource.size);
-  EXPECT_EQ(
-      0, std::memcmp("text1=sase", http.resource.buffer, http.resource.size));
+  EXPECT_EQ("text1=sase", http.resource);
 }
 
 TEST(HttpParserTest, Put2) {
@@ -49,9 +46,7 @@ TEST(HttpParserTest, Put2) {
   EXPECT_EQ(HttpVersion::HTTP_1_1, http.version);
   EXPECT_EQ(HttpMethod::Put, http.method);
   EXPECT_EQ("/test", http.uri);
-  ASSERT_EQ(8, http.resource.size);
-  EXPECT_EQ(0,
-            std::memcmp("someData", http.resource.buffer, http.resource.size));
+  EXPECT_EQ("someData", http.resource);
 }
 
 TEST(HttpParserTest, Get1) {
@@ -75,8 +70,7 @@ TEST(HttpParserTest, Get1) {
   EXPECT_EQ(HttpVersion::HTTP_1_1, http.version);
   EXPECT_EQ(HttpMethod::Get, http.method);
   EXPECT_EQ("/", http.uri);
-  EXPECT_EQ(nullptr, http.resource.buffer);
-  EXPECT_EQ(0, http.resource.size);
+  EXPECT_TRUE(http.resource.empty());
 }
 
 TEST(HttpParserTest, Get2) {
@@ -89,8 +83,7 @@ TEST(HttpParserTest, Get2) {
   EXPECT_EQ(HttpVersion::HTTP_1_1, http.version);
   EXPECT_EQ(HttpMethod::Get, http.method);
   EXPECT_EQ("/index.html", http.uri);
-  EXPECT_EQ(nullptr, http.resource.buffer);
-  EXPECT_EQ(0, http.resource.size);
+  EXPECT_TRUE(http.resource.empty());
 }
 
 TEST(HttpParserTest, Delete) {
@@ -105,8 +98,7 @@ TEST(HttpParserTest, Delete) {
   EXPECT_EQ(HttpVersion::HTTP_1_1, http.version);
   EXPECT_EQ(HttpMethod::Delete, http.method);
   EXPECT_EQ("/echo/delete/json", http.uri);
-  EXPECT_EQ(nullptr, http.resource.buffer);
-  EXPECT_EQ(0, http.resource.size);
+  EXPECT_TRUE(http.resource.empty());
 }
 
 TEST(HttpParserTest, VersionNotRecognised) {

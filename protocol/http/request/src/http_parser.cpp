@@ -1,5 +1,9 @@
 #include "http_parser.hpp"
 
+#include <sstream>
+#include <unordered_map>
+#include <vector>
+
 namespace protocol {
 
 namespace http {
@@ -45,15 +49,18 @@ static void parseRequestLine(std::istringstream& ss, HttpRequest& http) {
   }
 }
 
-static void parseContentLength(std::istringstream& ss, HttpRequest& http) {
+static std::size_t parseContentLength(std::istringstream& ss,
+                                      HttpRequest& http) {
   std::string line;
+  std::size_t content_length{0};
   while (std::getline(ss, line, '\n') && (line != "\r")) {
     if (line.rfind("Content-Lenght", 0) == 0) {
-      line.pop_back();  // Remove CR character
       const auto tokens = split(line, ' ');
-      http.resource.size = std::atoi(tokens[1].data());
+      content_length = std::atoi(tokens[1].data());
     }
   }
+
+  return content_length;
 }
 
 HttpRequest parseHttp(const std::string& buffer) noexcept {
@@ -69,8 +76,8 @@ HttpRequest parseHttp(const std::string& buffer) noexcept {
       parseRequestLine(ss, http);
 
       if (http.method == HttpMethod::Put) {
-        parseContentLength(ss, http);
-        http.resource.buffer = &buffer[ss.tellg()];
+        const auto content_length = parseContentLength(ss, http);
+        http.resource = {&buffer[ss.tellg()], content_length};
       }
       http.valid = true;
     } catch (std::exception& e) {

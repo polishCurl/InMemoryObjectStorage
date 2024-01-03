@@ -1,10 +1,7 @@
 #ifndef PROTOCOL_HTTP_REQUEST_SRC_HTTP_PARSER_HPP
 #define PROTOCOL_HTTP_REQUEST_SRC_HTTP_PARSER_HPP
 
-#include <sstream>
 #include <string>
-#include <unordered_map>
-#include <vector>
 
 namespace protocol {
 
@@ -33,10 +30,7 @@ enum class HttpMethod {
 /**
  * \brief HTTP resource representation.
  */
-struct HttpResource {
-  const char* buffer;  //*!< HttpResource buffer
-  std::size_t size;    //*!< HttpResource buffer size
-};
+using HttpResource = std::string_view;
 
 /**
  * \brief Parsed HTTP request.
