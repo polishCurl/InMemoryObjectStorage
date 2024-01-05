@@ -1,5 +1,7 @@
 #include "utils.hpp"
 
+#include <algorithm>
+
 namespace utils {
 
 std::vector<std::string_view> split(std::string_view text,
@@ -21,6 +23,14 @@ std::vector<std::string_view> split(std::string_view text,
   tokens.push_back(text.substr(start, end - start));
 
   return tokens;
+}
+
+void toLowerCase(std::string& text) noexcept {
+  std::transform(text.begin(), text.end(), text.begin(), ::tolower);
+}
+
+void toUpperCase(std::string& text) noexcept {
+  std::transform(text.begin(), text.end(), text.begin(), ::toupper);
 }
 
 }  // namespace utils
