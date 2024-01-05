@@ -2,7 +2,8 @@
 
 namespace utils {
 
-std::vector<std::string_view> split(std::string_view text, char delimeter) {
+std::vector<std::string_view> split(std::string_view text,
+                                    std::string_view delimeter) noexcept {
   if (text.empty()) {
     return {};
   }
@@ -13,7 +14,7 @@ std::vector<std::string_view> split(std::string_view text, char delimeter) {
 
   while (end != std::string::npos) {
     tokens.push_back(text.substr(start, end - start));
-    start = end + 1;
+    start = end + delimeter.size();
     end = text.find(delimeter, start);
   }
 
