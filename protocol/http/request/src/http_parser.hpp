@@ -99,7 +99,7 @@ class HttpParser : public IMemberAccess, public IValidate {
 
   bool valid_;                            //*!< Is HTTP request valid?
   HttpMethod method_;                     //*!< HTTP request method
-  std::string uri_;                       //*!< HTTP URI
+  std::string_view uri_;                  //*!< HTTP URI
   std::optional<HttpResource> resource_;  //*!< HTTP resource (if present)
   HttpHeaderFields header_fields_;        //*!< HTTP header fields.
 
