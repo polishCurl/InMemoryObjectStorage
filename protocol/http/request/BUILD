@@ -7,7 +7,10 @@ cc_library(
         "src/http_parser.hpp",
     ],
     strip_include_prefix = "",
-    deps = ["//utils"],
+    deps = [
+        "//protocol:member_access_interface",
+        "//utils",
+    ],
 )
 
 cc_test(

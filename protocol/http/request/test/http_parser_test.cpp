@@ -1,20 +1,20 @@
-#include "src/http_parser.hpp"
+#include "protocol/http/request/src/http_parser.hpp"
 
 #include "gtest/gtest.h"
 
 using namespace protocol::http::request;
 
 TEST(HttpParserTest, InitialState) {
-  const auto http = parseHttp("");
-  EXPECT_FALSE(http.valid);
-  EXPECT_EQ(HttpVersion::Unrecognized, http.version);
-  EXPECT_EQ(HttpMethod::Unrecognized, http.method);
-  EXPECT_TRUE(http.uri.empty());
-  EXPECT_TRUE(http.resource.empty());
+  const auto http = HttpParser("");
+  EXPECT_FALSE(http.isValid());
+  EXPECT_EQ(HttpMethod::Unrecognized, http.getMethod());
+  EXPECT_TRUE(http.getUri().empty());
+  EXPECT_FALSE(http.getResource());
+  EXPECT_FALSE(http["content-lenght"]);
 }
 
 TEST(HttpParserTest, Put1) {
-  char http_header[] =
+  const char http_header[] =
       "PUT /xampp/tests/file/check.php HTTP/1.1\r\n"
       "Host: 127.0.0.1\r\n"
       "Content-Type: application/x-www-form-urlencoded\r\n"
@@ -23,12 +23,13 @@ TEST(HttpParserTest, Put1) {
       "\r\n"
       "text1=sase";
 
-  const auto http = parseHttp(http_header);
-  EXPECT_TRUE(http.valid);
-  EXPECT_EQ(HttpVersion::Http_1_1, http.version);
-  EXPECT_EQ(HttpMethod::Put, http.method);
-  EXPECT_EQ("/xampp/tests/file/check.php", http.uri);
-  EXPECT_EQ("text1=sase", http.resource);
+  HttpParser http{http_header};
+  EXPECT_TRUE(http.isValid());
+  EXPECT_EQ(HttpMethod::Put, http.getMethod());
+  EXPECT_EQ(http.getUri(), "/xampp/tests/file/check.php");
+  EXPECT_EQ(http.getResource(), "text1=sase");
+  EXPECT_TRUE(http["content-lenght"]);
+  EXPECT_EQ(http["host"], "127.0.0.1");
 }
 
 TEST(HttpParserTest, Put2) {
@@ -41,12 +42,13 @@ TEST(HttpParserTest, Put2) {
       "\r\n"
       "someData";
 
-  const auto http = parseHttp(http_header);
-  EXPECT_TRUE(http.valid);
-  EXPECT_EQ(HttpVersion::Http_1_1, http.version);
-  EXPECT_EQ(HttpMethod::Put, http.method);
-  EXPECT_EQ("/test", http.uri);
-  EXPECT_EQ("someData", http.resource);
+  HttpParser http{http_header};
+  EXPECT_TRUE(http.isValid());
+  EXPECT_EQ(HttpMethod::Put, http.getMethod());
+  EXPECT_EQ(http.getUri(), "/test");
+  EXPECT_EQ(http.getResource(), "someData");
+  EXPECT_EQ(http["content-lenght"], "8");
+  EXPECT_FALSE(http["connection"]);
 }
 
 TEST(HttpParserTest, Get1) {
@@ -65,12 +67,13 @@ TEST(HttpParserTest, Get1) {
       "Accept-Encoding: gzip, deflate\r\n"
       "\r\n";
 
-  const auto http = parseHttp(http_header);
-  EXPECT_TRUE(http.valid);
-  EXPECT_EQ(HttpVersion::Http_1_1, http.version);
-  EXPECT_EQ(HttpMethod::Get, http.method);
-  EXPECT_EQ("/", http.uri);
-  EXPECT_TRUE(http.resource.empty());
+  HttpParser http{http_header};
+  EXPECT_TRUE(http.isValid());
+  EXPECT_EQ(HttpMethod::Get, http.getMethod());
+  EXPECT_EQ(http.getUri(), "/");
+  EXPECT_FALSE(http.getResource());
+  EXPECT_FALSE(http["content-lenght"]);
+  EXPECT_TRUE(http["connection"]);
 }
 
 TEST(HttpParserTest, Get2) {
@@ -78,12 +81,11 @@ TEST(HttpParserTest, Get2) {
       "GET /index.html HTTP/1.1\r\n"
       "\r\n";
 
-  const auto http = parseHttp(http_header);
-  EXPECT_TRUE(http.valid);
-  EXPECT_EQ(HttpVersion::Http_1_1, http.version);
-  EXPECT_EQ(HttpMethod::Get, http.method);
-  EXPECT_EQ("/index.html", http.uri);
-  EXPECT_TRUE(http.resource.empty());
+  HttpParser http{http_header};
+  EXPECT_TRUE(http.isValid());
+  EXPECT_EQ(HttpMethod::Get, http.getMethod());
+  EXPECT_EQ(http.getUri(), "/index.html");
+  EXPECT_FALSE(http.getResource());
 }
 
 TEST(HttpParserTest, Delete) {
@@ -93,22 +95,11 @@ TEST(HttpParserTest, Delete) {
       "Authorization: Bearer mt0dgHmLJMVQhvjpNXDyA83vA_PxH23Y\r\n"
       "\r\n";
 
-  const auto http = parseHttp(http_header);
-  EXPECT_TRUE(http.valid);
-  EXPECT_EQ(HttpVersion::Http_1_1, http.version);
-  EXPECT_EQ(HttpMethod::Delete, http.method);
-  EXPECT_EQ("/echo/delete/json", http.uri);
-  EXPECT_TRUE(http.resource.empty());
-}
-
-TEST(HttpParserTest, VersionNotRecognised) {
-  char http_header[] =
-      "GET /index.html HTTP/2.0\r\n"
-      "\r\n";
-
-  const auto http = parseHttp(http_header);
-  EXPECT_FALSE(http.valid);
-  EXPECT_EQ(HttpVersion::Unrecognized, http.version);
+  HttpParser http{http_header};
+  EXPECT_TRUE(http.isValid());
+  EXPECT_EQ(HttpMethod::Delete, http.getMethod());
+  EXPECT_EQ(http.getUri(), "/echo/delete/json");
+  EXPECT_FALSE(http.getResource());
 }
 
 TEST(HttpParserTest, MethodNotRecognised) {
@@ -116,7 +107,7 @@ TEST(HttpParserTest, MethodNotRecognised) {
       "POST /index.html HTTP/1.1\r\n"
       "\r\n";
 
-  const auto http = parseHttp(http_header);
-  EXPECT_FALSE(http.valid);
-  EXPECT_EQ(HttpMethod::Unrecognized, http.method);
+  const auto http = HttpParser(http_header);
+  EXPECT_FALSE(http.isValid());
+  EXPECT_EQ(HttpMethod::Unrecognized, http.getMethod());
 }
