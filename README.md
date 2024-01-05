@@ -29,7 +29,7 @@ docker start -i object_storage_container
 Remove unnecessary images and containers:
 ```
 docker image prune -a
-docker container prune -y
+docker container prune
 ```
 
 ## Building
