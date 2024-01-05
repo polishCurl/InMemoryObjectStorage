@@ -7,7 +7,10 @@ cc_library(
         "src/ftp_parser.hpp",
     ],
     strip_include_prefix = "",
-    deps = ["//utils"],
+    deps = [
+        "//protocol:validate_interface",
+        "//utils",
+    ],
 )
 
 cc_test(

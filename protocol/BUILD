@@ -19,3 +19,14 @@ cc_library(
     strip_include_prefix = "",
     visibility = ["//visibility:public"],
 )
+
+cc_library(
+    name = "validate_interface",
+    srcs = [
+    ],
+    hdrs = [
+        "ivalidate.hpp",
+    ],
+    strip_include_prefix = "",
+    visibility = ["//visibility:public"],
+)

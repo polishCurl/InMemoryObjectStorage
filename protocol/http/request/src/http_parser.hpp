@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "protocol/imember_access.hpp"
+#include "protocol/ivalidate.hpp"
 
 namespace protocol {
 
@@ -33,7 +34,7 @@ using HttpResource = std::string_view;
  *
  * Extracts relevant information from HTTP request.
  */
-class HttpParser : public IMemberAccess {
+class HttpParser : public IMemberAccess, public IValidate {
  public:
   /**
    * \brief Create HTTP parser.
@@ -52,7 +53,7 @@ class HttpParser : public IMemberAccess {
    *
    * \return True if HTTP request was successfully parsed, false otherwise.
    */
-  inline bool isValid() const noexcept { return valid_; }
+  inline bool isValid() const noexcept override { return valid_; }
 
   /**
    * \brief Return HTTP method.

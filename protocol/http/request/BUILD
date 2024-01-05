@@ -9,6 +9,7 @@ cc_library(
     strip_include_prefix = "",
     deps = [
         "//protocol:member_access_interface",
+        "//protocol:validate_interface",
         "//utils",
     ],
 )
