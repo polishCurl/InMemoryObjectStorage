@@ -1,4 +1,4 @@
-#include "src/ftp_response.hpp"
+#include "protocol/ftp/response/src/ftp_response.hpp"
 
 #include "gtest/gtest.h"
 

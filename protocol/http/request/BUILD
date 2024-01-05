@@ -6,7 +6,6 @@ cc_library(
     hdrs = [
         "src/http_parser.hpp",
     ],
-    strip_include_prefix = "",
     deps = [
         "//protocol:member_access_interface",
         "//protocol:validate_interface",

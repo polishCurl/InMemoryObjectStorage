@@ -6,7 +6,6 @@ cc_library(
     hdrs = [
         "src/ftp_parser.hpp",
     ],
-    strip_include_prefix = "",
     deps = [
         "//protocol:validate_interface",
         "//utils",

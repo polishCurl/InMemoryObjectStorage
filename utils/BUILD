@@ -6,7 +6,6 @@ cc_library(
     hdrs = [
         "src/utils.hpp",
     ],
-    strip_include_prefix = "",
     visibility = ["//visibility:public"],
 )
 

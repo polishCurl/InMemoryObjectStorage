@@ -6,7 +6,6 @@ cc_library(
     hdrs = [
         "src/memory_fs.hpp",
     ],
-    strip_include_prefix = "",
     deps = ["//filesystem:filesystem_interface"],
 )
 

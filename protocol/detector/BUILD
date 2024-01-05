@@ -6,7 +6,6 @@ cc_library(
     hdrs = [
         "src/protocol_detector.hpp",
     ],
-    strip_include_prefix = "",
 )
 
 cc_test(

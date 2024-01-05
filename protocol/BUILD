@@ -5,7 +5,6 @@ cc_library(
     hdrs = [
         "iserialize.hpp",
     ],
-    strip_include_prefix = "",
     visibility = ["//visibility:public"],
 )
 
@@ -16,7 +15,6 @@ cc_library(
     hdrs = [
         "imember_access.hpp",
     ],
-    strip_include_prefix = "",
     visibility = ["//visibility:public"],
 )
 
@@ -27,6 +25,5 @@ cc_library(
     hdrs = [
         "ivalidate.hpp",
     ],
-    strip_include_prefix = "",
     visibility = ["//visibility:public"],
 )

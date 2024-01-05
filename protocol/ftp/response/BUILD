@@ -3,7 +3,6 @@ cc_library(
     hdrs = [
         "src/ftp_response.hpp",
     ],
-    strip_include_prefix = "",
     deps = ["//protocol:serialize_interface"],
 )
 

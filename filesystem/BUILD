@@ -5,6 +5,5 @@ cc_library(
     hdrs = [
         "ifilesystem.hpp",
     ],
-    strip_include_prefix = "",
     visibility = ["//visibility:public"],
 )

@@ -1,4 +1,4 @@
-#include "src/protocol_detector.hpp"
+#include "protocol/detector/src/protocol_detector.hpp"
 
 #include "gtest/gtest.h"
 
