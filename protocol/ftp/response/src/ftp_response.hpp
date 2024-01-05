@@ -9,6 +9,8 @@ namespace protocol {
 
 namespace ftp {
 
+namespace response {
+
 /**
  * \brief FTP response codes.
  *
@@ -95,6 +97,7 @@ class FtpResponse : public ISerialize {
   const std::string text_;   //*!< FTP reply text.
 };
 
+}  // namespace response
 }  // namespace ftp
 }  // namespace protocol
 

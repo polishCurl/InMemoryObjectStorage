@@ -2,7 +2,7 @@
 
 #include "gtest/gtest.h"
 
-using namespace protocol::ftp;
+using namespace protocol::ftp::response;
 
 TEST(FtpResponseTest, NoMessage) {
   FtpResponse ftp_resp{FtpReplyCode::COMMAND_OK};
