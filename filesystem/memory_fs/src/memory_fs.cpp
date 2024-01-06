@@ -4,6 +4,8 @@ using namespace fs;
 
 std::pair<Result, const File&> MemoryFs::get(
     std::string_view path) const noexcept {
+  std::shared_lock lock(mutex_);
+
   if (!exists(path)) {
     return {Result::FileNotFound, {}};
   }
@@ -12,6 +14,8 @@ std::pair<Result, const File&> MemoryFs::get(
 }
 
 Result MemoryFs::add(std::string_view path, const File& file) noexcept {
+  std::unique_lock lock(mutex_);
+
   if (exists(path)) {
     return Result::AlreadyExists;
   }
@@ -22,6 +26,7 @@ Result MemoryFs::add(std::string_view path, const File& file) noexcept {
 
 FileList MemoryFs::list() const noexcept {
   FileList list;
+  std::shared_lock lock(mutex_);
 
   for (const auto& file : fs_) {
     list.emplace_back(file.first);
@@ -31,6 +36,7 @@ FileList MemoryFs::list() const noexcept {
 }
 
 Result MemoryFs::remove(std::string_view path) noexcept {
+  std::unique_lock lock(mutex_);
   return fs_.erase(path) == 1 ? Result::Success : Result::FileNotFound;
 }
 

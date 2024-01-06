@@ -1,6 +1,7 @@
 #ifndef FILESYSTEM_MEMORY_FS_SRC_MEMORY_FS_HPP
 #define FILESYSTEM_MEMORY_FS_SRC_MEMORY_FS_HPP
 
+#include <shared_mutex>
 #include <unordered_map>
 
 #include "filesystem/ifilesystem.hpp"
@@ -21,9 +22,10 @@ namespace fs {
 using Fs = std::unordered_map<std::string_view, File>;
 
 /**
- * \brief In-memory filesystem.
+ * \brief In-memory thread-safe filesystem.
  *
- * \par Non-persistent filesystem.
+ * Non-persistent filesystem which allows multiple threads to read from it
+ * but only one thread to modify the filesystem at any given time.
  */
 class MemoryFs : public IFilesystem {
  public:
@@ -55,6 +57,10 @@ class MemoryFs : public IFilesystem {
   bool exists(std::string_view path) const;
 
   Fs fs_;  ///< Mapping from paths to files.
+
+  /// Reader/Writer lock to allow mutiple threads to read the filesystem, but
+  /// only one thread to write to the filestystem.
+  mutable std::shared_mutex mutex_;
 };
 
 }  // namespace fs
