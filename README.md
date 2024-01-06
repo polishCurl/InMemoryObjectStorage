@@ -44,6 +44,13 @@ bazel build //:object_store
 ```
 
 ## Testing
+### Supported platforms
+Object store has been tested on the following platforms:
+1. Ubuntu 20.04.6 LTS -- gcc (Ubuntu 9.4.0-1ubuntu1~20.04.2) 9.4.0
+2. macOS 12.4 -- Apple clang version 13.1.6 (clang-1316.0.21.2.5)
+
+Since object store uses platform-independent `boost::asio` library for networking, minimal changes would need to be made to the application to support Windows OS.
+
 ### Unit tests
 Unit tests were implemented using the [GoogleTest](https://github.com/google/googletest) framework.
 
