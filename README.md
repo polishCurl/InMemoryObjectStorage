@@ -2,10 +2,13 @@
 In-memory object storage service written in C++. 
 
 ## Supported protocols
-The service runs as a terminal application over TCP using two protocols - HTTP/1.1 and FTP. 
+The service runs as a terminal application over TCP using two protocols - **HTTP/1.1** and **FTP**. 
+
 Both HTTP and FTP control channels are available on the same port. The protocol used by the client is automatically infered from the request.
+
 The service supports storing objects using one protocol and retrieving them with another.
-The object storage is in-memory, it is not persistent.
+
+The object storage is **in-memory**, it is **not persistent**.
 
 ## Setup
 The object storage is containerized to provide seemless delivery.
@@ -40,12 +43,6 @@ To build the main object store service binary, run:
 bazel build //:object_store 
 ```
 
-## Useful commands
-Generate Doxygen docummentation (located in `doxydoc/html/index.html`):
-```
-doxygen
-```
-
 ## Testing
 ### Unit tests
 Unit tests were implemented using the [GoogleTest](https://github.com/google/googletest) framework.
@@ -62,6 +59,12 @@ genhtml bazel-out/_coverage/_coverage_report.dat -o genhtml
 ```
 
 The top-level coverage report will be placed in `genhtml/index.html`
+
+## Documentation
+Generate Doxygen docummentation (will be located in `doxydoc/html/index.html`):
+```
+doxygen
+```
 
 ## Future extensions
 TODO list:
