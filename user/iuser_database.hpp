@@ -11,10 +11,6 @@ namespace user {
 struct User {
   std::string username;  ///< Username.
   std::string password;  ///< Password used to authenticate user.
-
-  bool operator==(const User& other) const {
-    return (username == other.username) && (password == other.password);
-  }
 };
 
 /**

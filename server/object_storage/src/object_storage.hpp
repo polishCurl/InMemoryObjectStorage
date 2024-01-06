@@ -8,6 +8,7 @@
 #include <thread>
 
 #include "server/iserver.hpp"
+#include "user/database/src/user_database.hpp"
 
 namespace server {
 
@@ -51,11 +52,11 @@ class ObjectStorage : public IServer {
   inline std::string getAddress() const noexcept override { return address_; }
   inline bool addUser(const std::string& username,
                       const std::string& password) override {
-    return true;
+    return users_.add({username, password});
   }
 
  protected:
-  // user::UserDatabase users_;
+  user::UserDatabase users_;
 
   const std::string address_;
   const uint16_t port_;

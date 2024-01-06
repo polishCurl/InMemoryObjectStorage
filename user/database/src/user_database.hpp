@@ -7,19 +7,6 @@
 
 #include "user/iuser_database.hpp"
 
-template <>
-struct std::hash<user::User> {
-  /**
-   * \brief Hash function implementation for a User.
-   *
-   * \param user User to hash.
-   */
-  size_t operator()(const user::User& user) const {
-    return std::hash<std::string>{}(user.username) ^
-           (std::hash<std::string>{}(user.password) << 1);
-  }
-};
-
 namespace user {
 
 /**

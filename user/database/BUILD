@@ -6,6 +6,7 @@ cc_library(
     hdrs = [
         "src/user_database.hpp",
     ],
+    visibility = ["//server/object_storage:__subpackages__"],
     deps = [
         "//user:user_database_interface",
         "@boost//:asio",
