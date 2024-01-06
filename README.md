@@ -46,7 +46,6 @@ Generate Doxygen docummentation (located in `doxydoc/html/index.html`):
 doxygen
 ```
 
-
 ## Testing
 ### Unit tests
 Unit tests were implemented using the [GoogleTest](https://github.com/google/googletest) framework.
@@ -63,3 +62,10 @@ genhtml bazel-out/_coverage/_coverage_report.dat -o genhtml
 ```
 
 The top-level coverage report will be placed in `genhtml/index.html`
+
+## Future extensions
+TODO list:
+1. Implement custom logging system instead of using `std::cout` and `std::cerr`.
+2. Support TLS (HTTPS and FTPS) connections on the same port.
+3. Create mocks for the defined interfaces and use them in unit tests using dependency injection.
+4. Create microbenchmarks for measuring performance of key components of the _Object storage_.
