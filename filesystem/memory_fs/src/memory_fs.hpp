@@ -54,7 +54,7 @@ class MemoryFs : public IFilesystem {
    */
   bool exists(std::string_view path) const;
 
-  Fs fs_;  //*!< Mapping from paths to files.
+  Fs fs_;  ///< Mapping from paths to files.
 };
 
 }  // namespace fs

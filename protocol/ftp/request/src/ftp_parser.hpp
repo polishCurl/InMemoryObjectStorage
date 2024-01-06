@@ -73,9 +73,9 @@ class FtpParser : public IValidate {
   /// Mapping from string representation of FTP command to the decoded value.
   static const std::unordered_map<std::string, FtpCommand> kCommandMap;
 
-  bool valid_;                            //*!< Is FTP request valid?
-  FtpCommand command_;                    //*!< Decoded FTP command
-  std::vector<std::string_view> tokens_;  //*!< Parsed FTP command tokens
+  bool valid_;                            ///< Is FTP request valid?
+  FtpCommand command_;                    ///< Decoded FTP command
+  std::vector<std::string_view> tokens_;  ///< Parsed FTP command tokens
 };
 
 }  // namespace request

@@ -11,8 +11,8 @@ namespace detector {
  * \brief Internet application layer protocols.
  */
 enum class AppLayerProtocol {
-  Http,  //*!< HTTP
-  Ftp,   //*!< FTP
+  Http,  ///< HTTP
+  Ftp,   ///< FTP
 };
 
 /**

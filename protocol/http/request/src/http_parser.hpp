@@ -97,11 +97,11 @@ class HttpParser : public IMemberAccess, public IValidate {
   /// Mapping from string representation of HTTP method to the decoded value.
   static const std::unordered_map<std::string_view, HttpMethod> kMethodMap;
 
-  bool valid_;                            //*!< Is HTTP request valid?
-  HttpMethod method_;                     //*!< HTTP request method
-  std::string_view uri_;                  //*!< HTTP URI
-  std::optional<HttpResource> resource_;  //*!< HTTP resource (if present)
-  HttpHeaderFields header_fields_;        //*!< HTTP header fields.
+  bool valid_;                            ///< Is HTTP request valid?
+  HttpMethod method_;                     ///< HTTP request method
+  std::string_view uri_;                  ///< HTTP URI
+  std::optional<HttpResource> resource_;  ///< HTTP resource (if present)
+  HttpHeaderFields header_fields_;        ///< HTTP header fields.
 
  private:
   void parseRequestLine(const std::vector<std::string_view>& lines);

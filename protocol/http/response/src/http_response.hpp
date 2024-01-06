@@ -190,10 +190,10 @@ class HttpResponse : public ISerialize {
   /// avoid excessive resizing and copies).
   static constexpr std::size_t kInitialStrBufferSize{100};
 
-  const HttpStatus status_;               //*!< HTTP status.
-  const std::string reason_phrase_;       //*!< HTTP reason phrase.
-  HttpResponseHeaders response_headers_;  //*!< HTTP response headers.
-  const HttpResource resource_;           //*!< HTTP resource.
+  const HttpStatus status_;               ///< HTTP status.
+  const std::string reason_phrase_;       ///< HTTP reason phrase.
+  HttpResponseHeaders response_headers_;  ///< HTTP response headers.
+  const HttpResource resource_;           ///< HTTP resource.
 };
 
 }  // namespace response

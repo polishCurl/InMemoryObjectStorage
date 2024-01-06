@@ -93,8 +93,8 @@ class FtpResponse : public ISerialize {
   }
 
  protected:
-  const FtpReplyCode code_;  //*!< FTP reply code.
-  const std::string text_;   //*!< FTP reply text.
+  const FtpReplyCode code_;  ///< FTP reply code.
+  const std::string text_;   ///< FTP reply text.
 };
 
 }  // namespace response

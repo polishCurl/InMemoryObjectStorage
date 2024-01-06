@@ -10,9 +10,9 @@ namespace fs {
  * \brief Filesystem operation result.
  */
 enum class Result {
-  Success,        //*!< Filesystem operation completed successfully.
-  FileNotFound,   //*!< Specified file was not found.
-  AlreadyExists,  //*!< File already exists at the specified path.
+  Success,        ///< Filesystem operation completed successfully.
+  FileNotFound,   ///< Specified file was not found.
+  AlreadyExists,  ///< File already exists at the specified path.
 };
 
 /**
