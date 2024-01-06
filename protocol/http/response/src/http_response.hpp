@@ -167,19 +167,19 @@ class HttpResponse : public ISerialize {
   /// HTTP version used.
   static constexpr std::string_view kHttpVersion{"HTTP/1.1"};
 
-  // HTTP end-of-line marker.
+  /// HTTP end-of-line marker.
   static constexpr std::string_view kEndOfLineMarker{"\r\n"};
 
   /// HTTP response header delimeter.
   static constexpr std::string_view kResponseHeaderDelim{": "};
 
-  // Response header name for specifying message body size.
+  /// Response header name for specifying message body size.
   static constexpr std::string_view kContentLength{"Content-Length"};
 
-  // Default response header name for message body content type.
+  /// Default response header name for message body content type.
   static constexpr std::string_view kContentType{"Content-Type"};
 
-  // Default response header value for message body content type.
+  /// Default response header value for message body content type.
   static constexpr std::string_view kContentTypeValue{
       "application/octet-stream"};
 
