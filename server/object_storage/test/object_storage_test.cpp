@@ -16,6 +16,14 @@ TEST(ObjectStorageTest, ConstructorSetPortAndAddress) {
   EXPECT_EQ(80, server.getPort());
 }
 
+TEST(ObjectStorageTest, AddUser) {
+  ObjectStorage server{"1.2.3.4", 120};
+  EXPECT_FALSE(server.addUser("anonymous", "admin4321"));
+  ASSERT_TRUE(server.addUser("Locker", "!vilnus*"));
+  EXPECT_FALSE(server.addUser("Locker", "DMVEJRFN28U123Y"));
+  EXPECT_TRUE(server.addUser("Nord", "THREAD_proTeCTED"));
+}
+
 TEST(ObjectStorageTest, Start) {
   ObjectStorage server{};
   EXPECT_TRUE(server.start());

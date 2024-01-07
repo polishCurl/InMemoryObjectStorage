@@ -50,10 +50,8 @@ class ObjectStorage : public IServer {
 
   inline std::uint16_t getPort() const noexcept override { return port_; };
   inline std::string getAddress() const noexcept override { return address_; }
-  inline bool addUser(const std::string& username,
-                      const std::string& password) override {
-    return users_.add({username, password});
-  }
+  bool addUser(const std::string& username,
+               const std::string& password) override;
 
  protected:
   user::UserDatabase users_;

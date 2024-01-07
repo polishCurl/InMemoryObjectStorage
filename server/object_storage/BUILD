@@ -10,6 +10,7 @@ cc_library(
         "//server:server_interface",
         "//user/database:user_database",
         "@boost//:asio",
+        "@boost//:log",
     ],
 )
 
