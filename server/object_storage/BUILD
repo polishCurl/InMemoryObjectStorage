@@ -8,6 +8,7 @@ cc_library(
     ],
     deps = [
         ":session",
+        "//filesystem/memory_fs",
         "//server:server_interface",
         "//user/database:user_database",
         "@boost//:asio",
@@ -33,6 +34,7 @@ cc_library(
         "src/session.hpp",
     ],
     deps = [
+        "//filesystem/memory_fs",
         "//user/database:user_database",
         "@boost//:asio",
         "@boost//:log",

@@ -7,6 +7,7 @@
 #include <string>
 #include <thread>
 
+#include "filesystem/memory_fs/src/memory_fs.hpp"
 #include "server/iserver.hpp"
 #include "user/database/src/user_database.hpp"
 
@@ -23,17 +24,16 @@ namespace object_storage {
 class ObjectStorage : public IServer {
  public:
   /**
-   * @brief Create an object storage server instance that will listen for HTTP
+   * \brief Create an object storage server instance that will listen for HTTP
    * and FTP requests on the given port and accept connections from the given
    * network interface.
    *
    * \note The default port number 21 requires the application to have root
    * privileges.
    *
-   * @param port The port to start the server on.
-   * @param host The host to accept incoming connections from.
+   * \param address The host to accept incoming connections from.
+   * \param port The port to start the server on.
    */
-
   ObjectStorage(const std::string& address = std::string("0.0.0.0"),
                 uint16_t port = 21);
 
@@ -51,17 +51,22 @@ class ObjectStorage : public IServer {
   inline std::uint16_t getPort() const noexcept override { return port_; };
   inline std::string getAddress() const noexcept override { return address_; }
   bool addUser(const std::string& username,
-               const std::string& password) override;
+               const std::string& password) noexcept override;
 
  protected:
-  user::UserDatabase users_;   ///< Users recognised by the server
-  const std::string address_;  ///< Host on which to accept connections
-  const uint16_t port_;        ///< Server port number
+  user::UserDatabase users_;  ///< Users recognised by the server
+  fs::MemoryFs filesystem_;   ///< In-memory file storage
+  std::string address_;       ///< Host on which to accept connections
+  const uint16_t port_;       ///< Server port number
 
   std::vector<std::thread> thread_pool_;     ///< Server worker threads
   boost::asio::io_service io_service_;       ///< OS IO services
   boost::asio::ip::tcp::acceptor acceptor_;  ///< TCP connections acceptor
   std::atomic<int> open_connection_count_;   ///< Open TCP connection count
+
+ private:
+  bool setUpAcceptor() noexcept;
+  void setUpLogging() noexcept;
 };
 
 }  // namespace object_storage
