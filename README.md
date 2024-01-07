@@ -95,3 +95,4 @@ TODO list:
 1. Support TLS (HTTPS and FTPS) connections on the same port.
 2. Create mocks for the defined interfaces and use them in unit tests using dependency injection.
 3. Create microbenchmarks for measuring performance of key components of the _Object storage_.
+4. Enable CI/CD.
