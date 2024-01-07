@@ -1,5 +1,5 @@
 cc_binary(
-    name = "object_store",
+    name = "object_storage",
     srcs = ["main.cpp"],
-    deps = [],
+    deps = ["//server/object_storage"],
 )

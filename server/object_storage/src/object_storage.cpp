@@ -6,10 +6,6 @@
 
 #include "session.hpp"
 
-using Acceptor = boost::asio::ip::tcp::acceptor;
-using Endpoint = boost::asio::ip::tcp::endpoint;
-using ErrorCode = boost::system::error_code;
-
 namespace server {
 
 namespace object_storage {
@@ -29,20 +25,17 @@ bool ObjectStorage::start(std::size_t thread_count) {
     return false;
   }
 
-  if (!setUpAcceptor()) {
+  if (!setUpSessionAcceptor()) {
     return false;
   }
 
-  auto ftp_session = std::make_shared<Session>(
-      io_service_, users_, filesystem_, [this]() { open_connection_count_--; });
+  for (size_t i = 0; i < thread_count; i++) {
+    workers_.emplace_back([this] { io_service_.run(); });
+  }
 
-  BOOST_LOG_TRIVIAL(info) << "Object storage server listening at "
+  BOOST_LOG_TRIVIAL(info) << "Server listening at "
                           << acceptor_.local_endpoint().address() << ':'
                           << acceptor_.local_endpoint().port();
-
-  for (size_t i = 0; i < thread_count; i++) {
-    thread_pool_.emplace_back([this] { io_service_.run(); });
-  }
 
   return true;
 }
@@ -51,7 +44,7 @@ void ObjectStorage::stop() {
   BOOST_LOG_TRIVIAL(info) << "Stopping server...";
   io_service_.stop();
 
-  for (auto& thread : thread_pool_) {
+  for (auto& thread : workers_) {
     thread.join();
   }
 }
@@ -71,7 +64,7 @@ bool ObjectStorage::addUser(const std::string& username,
   return user_added;
 }
 
-bool ObjectStorage::setUpAcceptor() noexcept {
+bool ObjectStorage::setUpSessionAcceptor() noexcept {
   ErrorCode error_code{};
   const Endpoint endpoint{boost::asio::ip::make_address(address_, error_code),
                           port_};
@@ -111,7 +104,41 @@ bool ObjectStorage::setUpAcceptor() noexcept {
     return false;
   }
 
+  auto session = std::make_shared<Session>(
+      io_service_, users_, filesystem_, [this]() { open_connection_count_--; });
+
+  acceptor_.async_accept(session->getSocket(),
+                         [this, session](auto error_code) {
+                           open_connection_count_++;
+                           acceptSession(session, error_code);
+                         });
+
   return true;
+}
+
+void ObjectStorage::acceptSession(const std::shared_ptr<Session>& session,
+                                  ErrorCode const& error_code) noexcept {
+  if (error_code) {
+    BOOST_LOG_TRIVIAL(error)
+        << "Failed to accept session: " << error_code.message();
+    return;
+  }
+
+  BOOST_LOG_TRIVIAL(debug)
+      << "Client connected: "
+      << session->getSocket().remote_endpoint().address().to_string() << ':'
+      << session->getSocket().remote_endpoint().port();
+
+  session->start();
+
+  auto new_session = std::make_shared<Session>(
+      io_service_, users_, filesystem_, [this]() { open_connection_count_--; });
+
+  acceptor_.async_accept(new_session->getSocket(),
+                         [this, new_session](auto error_code) {
+                           open_connection_count_++;
+                           acceptSession(new_session, error_code);
+                         });
 }
 
 void ObjectStorage::setUpLogging() noexcept {

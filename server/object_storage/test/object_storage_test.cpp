@@ -16,6 +16,11 @@ TEST(ObjectStorageTest, ConstructorSetPortAndAddress) {
   EXPECT_EQ(80, server.getPort());
 }
 
+TEST(ObjectStorageTest, ConstructorInvalidAddress) {
+  ObjectStorage server{"dfsadcxz*", 80};
+  EXPECT_FALSE(server.start());
+}
+
 TEST(ObjectStorageTest, AddUser) {
   ObjectStorage server{"1.2.3.4", 120};
   EXPECT_FALSE(server.addUser("anonymous", "admin4321"));
@@ -27,4 +32,9 @@ TEST(ObjectStorageTest, AddUser) {
 TEST(ObjectStorageTest, Start) {
   ObjectStorage server{};
   EXPECT_TRUE(server.start());
+}
+
+TEST(ObjectStorageTest, StartZeroThreads) {
+  ObjectStorage server{};
+  EXPECT_FALSE(server.start(0));
 }
