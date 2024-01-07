@@ -29,10 +29,9 @@ Start an existing container:
 docker start -i object_storage_container
 ```
 
-Remove unnecessary images and containers:
+Remove _object_storage_container_:
 ```
-docker image prune -a
-docker container prune
+docker rm object_storage_container
 ```
 
 ## Building
@@ -43,16 +42,22 @@ To build the main object store service binary, run:
 bazel build //:object_store 
 ```
 
-## Testing
-### Supported platforms
-Object store has been tested on the following platforms:
+The only external build dependencies are:
+- _Boost.Asio_
+- _Boost.Log_
+
+These dependencies are also managed by Bazel.
+
+
+## Supported platforms
+Object store has been tested on the following platforms (OS -- compiler):
 1. Ubuntu 20.04.6 LTS -- gcc (Ubuntu 9.4.0-1ubuntu1~20.04.2) 9.4.0
 2. macOS 12.4 -- Apple clang version 13.1.6 (clang-1316.0.21.2.5)
 
 Since object store uses platform-independent `boost::asio` library for networking, minimal changes would need to be made to the application to support Windows OS.
 
-### Unit tests
-Unit tests were implemented using the [GoogleTest](https://github.com/google/googletest) framework.
+## Testing
+Both unit and intergration tests were implemented using the [GoogleTest](https://github.com/google/googletest) framework.
 
 Build and execute all unit tests:
 ```
@@ -75,7 +80,6 @@ doxygen
 
 ## Future extensions
 TODO list:
-1. Implement custom logging system instead of using `std::cout` and `std::cerr`.
-2. Support TLS (HTTPS and FTPS) connections on the same port.
-3. Create mocks for the defined interfaces and use them in unit tests using dependency injection.
-4. Create microbenchmarks for measuring performance of key components of the _Object storage_.
+1. Support TLS (HTTPS and FTPS) connections on the same port.
+2. Create mocks for the defined interfaces and use them in unit tests using dependency injection.
+3. Create microbenchmarks for measuring performance of key components of the _Object storage_.
