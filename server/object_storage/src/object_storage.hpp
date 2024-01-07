@@ -54,16 +54,14 @@ class ObjectStorage : public IServer {
                const std::string& password) override;
 
  protected:
-  user::UserDatabase users_;
+  user::UserDatabase users_;   ///< Users recognised by the server
+  const std::string address_;  ///< Host on which to accept connections
+  const uint16_t port_;        ///< Server port number
 
-  const std::string address_;
-  const uint16_t port_;
-
-  std::vector<std::thread> thread_pool_;
-  boost::asio::io_service io_service_;
-  boost::asio::ip::tcp::acceptor acceptor_;
-
-  std::atomic<int> open_connection_count_;
+  std::vector<std::thread> thread_pool_;     ///< Server worker threads
+  boost::asio::io_service io_service_;       ///< OS IO services
+  boost::asio::ip::tcp::acceptor acceptor_;  ///< TCP connections acceptor
+  std::atomic<int> open_connection_count_;   ///< Open TCP connection count
 };
 
 }  // namespace object_storage
