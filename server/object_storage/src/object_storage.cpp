@@ -14,9 +14,11 @@ namespace server {
 
 namespace object_storage {
 
-ObjectStorage::ObjectStorage(const std::string& address, uint16_t port)
+ObjectStorage::ObjectStorage(const std::string& address, uint16_t port,
+                             LogLevel log_level)
     : address_{address},
       port_{port},
+      log_level_{log_level},
       acceptor_{io_service_},
       open_connection_count_{0} {
   setUpLogging();
@@ -114,7 +116,7 @@ bool ObjectStorage::setUpAcceptor() noexcept {
 
 void ObjectStorage::setUpLogging() noexcept {
   boost::log::core::get()->set_filter(boost::log::trivial::severity >=
-                                      boost::log::trivial::info);
+                                      static_cast<int>(log_level_));
 }
 
 }  // namespace object_storage

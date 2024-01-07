@@ -16,6 +16,11 @@ namespace server {
 namespace object_storage {
 
 /**
+ * \brief Object storage server logging level.
+ */
+enum class LogLevel : int { trace = 0, debug, info, warning, error, fatal };
+
+/**
  * \brief Object storage server implementation.
  *
  * Object storage is an FTP/HTTP server for in-memory object storage and
@@ -33,9 +38,10 @@ class ObjectStorage : public IServer {
    *
    * \param address The host to accept incoming connections from.
    * \param port The port to start the server on.
+   * \param log_level Logging level used by the server (verbosity).
    */
   ObjectStorage(const std::string& address = std::string("0.0.0.0"),
-                uint16_t port = 21);
+                uint16_t port = 21, LogLevel log_level = LogLevel::info);
 
   // No use case for copying and moving for now.
   ObjectStorage(ObjectStorage&&) = delete;
@@ -58,6 +64,7 @@ class ObjectStorage : public IServer {
   fs::MemoryFs filesystem_;   ///< In-memory file storage
   std::string address_;       ///< Host on which to accept connections
   const uint16_t port_;       ///< Server port number
+  LogLevel log_level_;        ///< Server logging level
 
   std::vector<std::thread> thread_pool_;     ///< Server worker threads
   boost::asio::io_service io_service_;       ///< OS IO services
