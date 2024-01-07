@@ -1,14 +1,26 @@
 # Object storage
-In-memory object storage service written in C++. 
+In-memory file storage service written in C++. 
 
-## Supported protocols
-The service runs as a terminal application over TCP using two protocols - **HTTP/1.1** and **FTP**. 
+## Description
+_Object Storage_ runs as a terminal application over TCP using two protocols - **HTTP/1.1** and **FTP**. 
 
 Both HTTP and FTP control channels are available on the same port. The protocol used by the client is automatically infered from the request.
 
-The service supports storing objects using one protocol and retrieving them with another.
+The service supports storing files using one protocol and retrieving them with another.
 
 The object storage is **in-memory**, it is **not persistent**.
+
+### Features
+- Uploading, downloading and deleting files
+
+FTP:
+- Support for passive mode (only)
+- FTP login
+
+HTTP:
+- Basic Authentication
+
+**Note**: Object storage does not support encryption.
 
 ## Setup
 The object storage is containerized to provide seemless delivery.
