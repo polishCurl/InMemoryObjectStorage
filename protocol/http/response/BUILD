@@ -6,6 +6,7 @@ cc_library(
     hdrs = [
         "src/http_response.hpp",
     ],
+    visibility = ["//server/object_storage:__subpackages__"],
     deps = ["//protocol:serialize_interface"],
 )
 

@@ -6,6 +6,7 @@ cc_library(
     hdrs = [
         "src/http_parser.hpp",
     ],
+    visibility = ["//server/object_storage:__subpackages__"],
     deps = [
         "//protocol:member_access_interface",
         "//protocol:validate_interface",

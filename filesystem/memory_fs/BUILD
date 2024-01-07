@@ -6,6 +6,7 @@ cc_library(
     hdrs = [
         "src/memory_fs.hpp",
     ],
+    visibility = ["//server/object_storage:__subpackages__"],
     deps = ["//filesystem:filesystem_interface"],
 )
 

@@ -6,6 +6,7 @@ cc_library(
     hdrs = [
         "src/ftp_parser.hpp",
     ],
+    visibility = ["//server/object_storage:__subpackages__"],
     deps = [
         "//protocol:validate_interface",
         "//utils",

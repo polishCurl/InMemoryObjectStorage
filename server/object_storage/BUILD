@@ -7,6 +7,7 @@ cc_library(
         "src/object_storage.hpp",
     ],
     deps = [
+        ":session",
         "//server:server_interface",
         "//user/database:user_database",
         "@boost//:asio",
@@ -20,5 +21,20 @@ cc_test(
     deps = [
         ":object_storage",
         "@googletest//:gtest_main",
+    ],
+)
+
+cc_library(
+    name = "session",
+    srcs = [
+        "src/session.cpp",
+    ],
+    hdrs = [
+        "src/session.hpp",
+    ],
+    deps = [
+        "//user/database:user_database",
+        "@boost//:asio",
+        "@boost//:log",
     ],
 )

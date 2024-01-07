@@ -6,6 +6,7 @@ cc_library(
     hdrs = [
         "src/protocol_detector.hpp",
     ],
+    visibility = ["//server/object_storage:__subpackages__"],
 )
 
 cc_test(
