@@ -26,18 +26,15 @@ Session::Session(IOService& io_service, const user::UserDatabase& user_database,
       ftp_data_serializer_(io_service) {}
 
 Session::~Session() {
-  BOOST_LOG_TRIVIAL(debug) << "Closing session with " << getRemoteEndpointInfo()
-                           << "...";
   closeSockets();
   completion_handler_();
 }
 
 void Session::start() noexcept {
+  BOOST_LOG_TRIVIAL(debug) << "Starting session with "
+                           << getRemoteEndpointInfo();
   setTcpNoDelay();
-  // serializer_.post([me = shared_from_this()]() { me->readFtpCommand(); });
-
-  BOOST_LOG_TRIVIAL(debug) << "Session with " << getRemoteEndpointInfo()
-                           << " started";
+  serializer_.post([me = shared_from_this()]() { me->getNextRequest(); });
 }
 
 void Session::setTcpNoDelay() noexcept {
@@ -50,12 +47,18 @@ void Session::setTcpNoDelay() noexcept {
 }
 
 void Session::closeSockets() noexcept {
-  // Close HTTP/FTP command socket
+  closeHttpFtpSocket();
+  closeFtpDataSocket();
+}
+
+void Session::closeHttpFtpSocket() noexcept {
   ErrorCode error_code;
   socket_.shutdown(Socket::shutdown_both, error_code);
   socket_.close(error_code);
+}
 
-  // Close FTP data socket
+void Session::closeFtpDataSocket() noexcept {
+  ErrorCode error_code;
   auto data_socket = ftp_data_socket_.lock();
   if (data_socket) {
     data_socket->shutdown(Socket::shutdown_both, error_code);
@@ -68,50 +71,40 @@ std::string Session::getRemoteEndpointInfo() const noexcept {
          std::to_string(socket_.remote_endpoint().port());
 }
 
-void Session::getRequest() noexcept {
-  /*
+void Session::getNextRequest() noexcept {
   boost::asio::async_read_until(
       socket_, input_stream_, "\r\n",
       serializer_.wrap([me = shared_from_this()](ErrorCode error_code,
-                                                 std::size_t length) {
+                                                 std::size_t header_length) {
         if (error_code) {
-          if (error_code != asio::error::eof) {
-            std::cerr << "read_until error: " << error_code.message()
-                      << std::endl;
+          if (error_code == boost::asio::error::eof) {
+            BOOST_LOG_TRIVIAL(error)
+                << "Connection closed by " << me->getRemoteEndpointInfo();
+          } else {
+            BOOST_LOG_TRIVIAL(error)
+                << "Failed to read HTTP/FTP request header: "
+                << error_code.message();
           }
 
-          me->data_acceptor_.close(ec_);
+          me->ftp_data_acceptor_.close(error_code);
+          me->ftp_data_serializer_.post([me]() { me->closeFtpDataSocket(); });
 
-          me->data_socket_strand_.post([me]() {
-            auto data_socket = me->data_socket_weakptr_.lock();
-            if (data_socket) {
-              asio::error_code ec_;
-              data_socket->close(ec_);
-            }
-          });
+        } else {
+          std::istream stream(&(me->input_stream_));
+          std::string packet;
+          packet.resize(header_length);
+          stream.read(&packet[0], header_length);
 
-          return;
+          auto body_length = boost::asio::read_until(
+              me->socket_, me->input_stream_, "\r\n\r\n");
+
+          packet.resize(header_length + body_length);
+          stream.read(&packet[header_length], body_length);
+
+          BOOST_LOG_TRIVIAL(debug) << "FTP/HTTP header:\n" << packet;
+          me->getNextRequest();
         }
-
-        std::istream stream(&(me->command_input_stream_));
-        std::string packet_string(length - 2, ' ');
-        stream.read(
-            &packet_string[0],
-            length - 2);  // NOLINT(readability-container-data-pointer) Reason:
-                          // I need a non-const pointer here, As I am directly
-                          // reading into the buffer, but .data() returns a
-                          // const pointer. I don't consider a const_cast to be
-                          // better. Since C++11 this is safe, as strings are
-                          // stored in contiguous memeory.
-
-        stream.ignore(2);  // Remove the "\r\n"
-#ifndef NDEBUG
-        std::cout << "FTP << " << packet_string << std::endl;
-#endif
-
-        me->handleFtpCommand(packet_string);
       }));
-      */
 }
 
 }  // namespace object_storage

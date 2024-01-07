@@ -80,15 +80,22 @@ class Session : public std::enable_shared_from_this<Session> {
   /// Disable Nagle's algorithm on HTTP/FTP command socket.
   void setTcpNoDelay() noexcept;
 
-  /// Close all the managed sockets.
+  /// Close all sockets.
   void closeSockets() noexcept;
+
+  /// Close HTTP/FTP command socket.
+  void closeHttpFtpSocket() noexcept;
+
+  /// Close FTP data socket.
+  void closeFtpDataSocket() noexcept;
 
   /// Return information about the remote endpoint in human-readable form.
   std::string getRemoteEndpointInfo() const noexcept;
 
   /// Read and process the next HTTP/FTP request.
-  void getRequest() noexcept;
+  void getNextRequest() noexcept;
 };
+
 }  // namespace object_storage
 }  // namespace server
 
