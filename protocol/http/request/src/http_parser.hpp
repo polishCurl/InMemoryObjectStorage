@@ -86,7 +86,7 @@ class HttpParser : public IMemberAccess, public IValidate {
   using HttpHeaderFields = std::unordered_map<std::string, std::string_view>;
 
   /// HTTP request header name for getting the resource size (content length).
-  static constexpr std::string_view kContentLengthKey{"content-length"};
+  static constexpr std::string_view kContentLengthKey{"content-lenght"};
 
   /// Mapping from string representation of HTTP method to the decoded value.
   static const std::unordered_map<std::string_view, HttpMethod> kMethodMap;
