@@ -43,9 +43,12 @@ Session::Session(IOService& io_service, const user::UserDatabase& user_database,
            std::bind(&Session::handleHttpPut, this, std::placeholders::_1)},
           {HttpMethod::Delete,
            std::bind(&Session::handleHttpDelete, this, std::placeholders::_1)},
-      }
-
-{}
+      } {
+  // TODO: Remove
+  filesystem_.add("/test.txt", "aaaa");
+  filesystem_.add("/yolo/test.txt", "x");
+  filesystem_.add("/temp.json", "json");
+}
 
 Session::~Session() {
   closeSocket();
@@ -177,14 +180,14 @@ void Session::handleFtpRequest(const std::string& request) noexcept {
 }
 
 void Session::handleHttpRequest(std::string& request) noexcept {
-  auto header_length = request.size();
+  auto status_line_size = request.size();
 
   // Read the rest of the HTTP request (excluding message body)
-  auto body_length =
+  auto response_headers_size =
       boost::asio::read_until(socket_, input_stream_, "\r\n\r\n");
   std::istream stream(&input_stream_);
-  request.resize(request.size() + body_length);
-  stream.read(&request[header_length], body_length);
+  request.resize(request.size() + response_headers_size);
+  stream.read(&request[status_line_size], response_headers_size);
 
   BOOST_LOG_TRIVIAL(debug) << "HTTP request:\n" << request;
 
@@ -199,7 +202,6 @@ void Session::handleHttpRequest(std::string& request) noexcept {
 
 void Session::handleHttpGet(const HttpParser& parser) {
   if (parser.getUri() == "/") {
-    filesystem_.add("/test.txt", "aaaa");
     const auto file_list = filesystem_.list();
     std::string response;
     for (const auto& file : file_list) {
@@ -221,7 +223,47 @@ void Session::handleHttpGet(const HttpParser& parser) {
   user_database_.exists(User{"stary", "pijany"});
 }
 
-void Session::handleHttpPut(const HttpParser& parser) {}
+void Session::handleHttpPut(const HttpParser& parser) {
+  ErrorCode error_code;
+  const auto file_size = parser.getResourceSize();
+  BOOST_LOG_TRIVIAL(debug) << "READING " << file_size << " BYTES";
+  auto bytes_read =
+      boost::asio::read(socket_, input_stream_,
+                        boost::asio::transfer_exactly(file_size), error_code);
+
+  if (bytes_read != file_size) {
+    BOOST_LOG_TRIVIAL(error) << "Failed to read " << file_size
+                             << " bytes (Actual: " << bytes_read << ')';
+    sendMessage(
+        HttpResponse{"Invalid Content-Length value!", HttpStatus::BadRequest});
+  }
+  std::istream stream(&input_stream_);
+  fs::File file;
+  file.resize(file_size);
+  stream.read(&file[0], file_size);
+
+  BOOST_LOG_TRIVIAL(debug) << "FILE: " << file;
+
+  /*
+
+  auto bufs = input_stream_.data();
+  fs::File file(boost::asio::buffers_begin(bufs),
+                boost::asio::buffers_begin(bufs) + file_size);
+
+
+
+
+  const auto status = filesystem_.put(parser.getUri(), parser.);
+  switch (status) {
+    case fs::Status::FileNotFound:
+      sendMessage(HttpResponse{HttpStatus::NotFound});
+      break;
+    default:
+      sendMessage(HttpResponse{HttpStatus::Ok, file});
+      break;
+  }
+    */
+}
 
 void Session::handleHttpDelete(const HttpParser& parser) {
   // const auto result = filesystem_.remove(parser.getUri());
