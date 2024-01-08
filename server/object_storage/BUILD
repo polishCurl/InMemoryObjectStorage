@@ -11,6 +11,9 @@ cc_library(
     visibility = ["//:__pkg__"],
     deps = [
         "//filesystem/memory_fs",
+        "//protocol/detector:protocol_detector",
+        "//protocol/ftp/request:ftp_parser",
+        "//protocol/http/request:http_parser",
         "//server:server_interface",
         "//user/database:user_database",
         "@boost//:asio",

@@ -3,17 +3,22 @@
 
 #include <boost/asio.hpp>
 #include <deque>
+#include <functional>
 #include <memory>
+#include <string>
 
 #include "filesystem/memory_fs/src/memory_fs.hpp"
+#include "protocol/ftp/request/src/ftp_parser.hpp"
+#include "protocol/http/request/src/http_parser.hpp"
 #include "user/database/src/user_database.hpp"
 
-using IOService = boost::asio::io_service;
-using Socket = boost::asio::ip::tcp::socket;
-using Acceptor = boost::asio::ip::tcp::acceptor;
+using IOService = boost::asio::io_service;        ///< OS IO services
+using Socket = boost::asio::ip::tcp::socket;      ///< TCP socket
+using Acceptor = boost::asio::ip::tcp::acceptor;  ///< TCP connection acceptor
+using HttpHandler = std::function<void(
+    const protocol::http::request::HttpParser&)>;  ///< HTTP request handler
 
 namespace server {
-
 namespace object_storage {
 
 class Session : public std::enable_shared_from_this<Session> {
@@ -74,26 +79,43 @@ class Session : public std::enable_shared_from_this<Session> {
   std::shared_ptr<user::User> ftp_user_;  ///< Currently logged in user.
 
   // ------------------ HTTP ------------------
+  /// Mapping from HTTP request method to the corresponding handler function.
+  const std::unordered_map<protocol::http::request::HttpMethod, HttpHandler>
+      http_handlers_;
 
  private:
   // ------------------ COMMON ------------------
   /// Disable Nagle's algorithm on HTTP/FTP command socket.
   void setTcpNoDelay() noexcept;
 
-  /// Close all sockets.
-  void closeSockets() noexcept;
-
   /// Close HTTP/FTP command socket.
-  void closeHttpFtpSocket() noexcept;
-
-  /// Close FTP data socket.
-  void closeFtpDataSocket() noexcept;
+  void closeSocket() noexcept;
 
   /// Return information about the remote endpoint in human-readable form.
   std::string getRemoteEndpointInfo() const noexcept;
 
-  /// Read and process the next HTTP/FTP request.
-  void getNextRequest() noexcept;
+  /// Read and incoming request.
+  void readRequest() noexcept;
+
+  // ------------------ FTP ------------------
+  /// Close FTP data socket.
+  void closeFtpDataSocket() noexcept;
+
+  /// Handle FTP request.
+  void handleFtpRequest(const std::string& request) noexcept;
+
+  // ------------------ HTTP ------------------
+  /// Handle HTTP request.
+  void handleHttpRequest(std::string& request) noexcept;
+
+  /// Handle HTTP GET request.
+  void handleHttpGet(const protocol::http::request::HttpParser& parser);
+
+  /// Handle HTTP PUT request.
+  void handleHttpPut(const protocol::http::request::HttpParser& parser);
+
+  /// Handle HTTP DELETE request.
+  void handleHttpDelete(const protocol::http::request::HttpParser& parser);
 };
 
 }  // namespace object_storage

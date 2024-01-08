@@ -2,7 +2,6 @@
 
 #include <boost/log/expressions.hpp>
 #include <boost/log/trivial.hpp>
-#include <iostream>
 
 #include "session.hpp"
 
