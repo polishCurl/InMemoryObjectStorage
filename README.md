@@ -11,14 +11,20 @@ The service supports storing files using one protocol and retrieving them with a
 The object storage is **in-memory**, it is **not persistent**.
 
 ### Features
-- Uploading, downloading and deleting files
-
 FTP:
+- List all stored files: `LIST`
+- Download files: `RETR /{key}`
+- Upload files: `STOR /{key}`
+- Remove files: `DELETE /{key}`
 - Support for passive mode (only)
-- FTP login
+- FTP login (optional)
 
 HTTP:
-- Basic Authentication
+- List all stored files: `GET /`
+- Download files: `GET /{key}`
+- Upload files: `PUT /{key}`
+- Remove files: `DELETE /{key}`
+- Basic Authentication (optional)
 
 **Note**: Object storage does not support encryption.
 
@@ -93,6 +99,7 @@ doxygen
 ## Future extensions
 TODO list:
 1. Support TLS (HTTPS and FTPS) connections on the same port.
+2. Add support for FTP commands like CWD, 
 2. Create mocks for the defined interfaces and use them in unit tests using dependency injection.
 3. Create microbenchmarks for measuring performance of key components of the _Object storage_.
 4. Enable CI/CD.
