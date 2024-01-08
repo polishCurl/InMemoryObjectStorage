@@ -226,7 +226,7 @@ void Session::handleHttpGet(const HttpParser& parser) {
 void Session::handleHttpPut(const HttpParser& parser) {
   ErrorCode error_code;
   const auto file_size = parser.getResourceSize();
-  BOOST_LOG_TRIVIAL(debug) << "READING " << file_size << " BYTES";
+  const auto& filename = parser.getUri();
   auto bytes_read =
       boost::asio::read(socket_, input_stream_,
                         boost::asio::transfer_exactly(file_size), error_code);
@@ -234,35 +234,24 @@ void Session::handleHttpPut(const HttpParser& parser) {
   if (bytes_read != file_size) {
     BOOST_LOG_TRIVIAL(error) << "Failed to read " << file_size
                              << " bytes (Actual: " << bytes_read << ')';
-    sendMessage(
-        HttpResponse{"Invalid Content-Length value!", HttpStatus::BadRequest});
+    sendMessage(HttpResponse{HttpStatus::BadRequest});
+  } else {
+    auto bufs = input_stream_.data();
+    fs::File file(boost::asio::buffers_begin(bufs),
+                  boost::asio::buffers_begin(bufs) + file_size);
+
+    const auto status = filesystem_.add(filename, file);
+    switch (status) {
+      case fs::Status::AlreadyExists:
+        sendMessage(HttpResponse{HttpStatus::NotFound});
+        break;
+      default:
+        sendMessage(HttpResponse{HttpStatus::Created});
+        break;
+    }
+
+    BOOST_LOG_TRIVIAL(debug) << "Saved file " << filename;
   }
-  std::istream stream(&input_stream_);
-  fs::File file;
-  file.resize(file_size);
-  stream.read(&file[0], file_size);
-
-  BOOST_LOG_TRIVIAL(debug) << "FILE: " << file;
-
-  /*
-
-  auto bufs = input_stream_.data();
-  fs::File file(boost::asio::buffers_begin(bufs),
-                boost::asio::buffers_begin(bufs) + file_size);
-
-
-
-
-  const auto status = filesystem_.put(parser.getUri(), parser.);
-  switch (status) {
-    case fs::Status::FileNotFound:
-      sendMessage(HttpResponse{HttpStatus::NotFound});
-      break;
-    default:
-      sendMessage(HttpResponse{HttpStatus::Ok, file});
-      break;
-  }
-    */
 }
 
 void Session::handleHttpDelete(const HttpParser& parser) {
