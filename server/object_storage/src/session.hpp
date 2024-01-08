@@ -24,7 +24,7 @@ namespace object_storage {
 class Session : public std::enable_shared_from_this<Session> {
  public:
   Session(IOService& io_service, const user::UserDatabase& user_database,
-          const fs::MemoryFs& filesystem,
+          fs::MemoryFs& filesystem,
           const std::function<void()>& completion_handler);
 
   // Disable copy and move since we are inheriting from shared_from_this
@@ -46,11 +46,86 @@ class Session : public std::enable_shared_from_this<Session> {
    */
   inline Socket& getSocket() noexcept { return socket_; }
 
- protected:
+ private:
+  // ------------------ COMMON ------------------
+  /**
+   * \brief Disable Nagle's algorithm on HTTP/FTP command socket.
+   */
+  void setTcpNoDelay() noexcept;
+
+  /**
+   * \brief Close HTTP/FTP command socket.
+   */
+  void closeSocket() noexcept;
+
+  /**
+   * \brief Get information about remote endpoint (IP address + port number).
+   *
+   * \return Remote endpoint info.
+   */
+  std::string getRemoteEndpointInfo() const noexcept;
+
+  /**
+   * \brief Handler for receiving messages on HTTP/FTP command socket.
+   *
+   * \note This method is asynchronous.
+   */
+  void receiveMessageHandler() noexcept;
+
+  /**
+   * \brief Handler for sending messages on HTTP/FTP command socket.
+   *
+   * \note This method is asynchronous.
+   */
+  void sendMessageHandler() noexcept;
+
+  /**
+   * \brief Send message on HTTP/FTP command socket.
+   *
+   * \param message Message to send.
+   */
+  void sendMessage(const std::string& message);
+
+  // ------------------ FTP ------------------
+  /**
+   * \brief Close FTP data socket.
+   */
+  void closeFtpDataSocket() noexcept;
+
+  /**
+   * \brief Handle FTP request.
+   *
+   * \param request Request to handle.
+   */
+  void handleFtpRequest(const std::string& request) noexcept;
+
+  // ------------------ HTTP ------------------
+  /**
+   * \brief Handle HTTP request.
+   *
+   * \param request Request to handle.
+   */
+  void handleHttpRequest(std::string& request) noexcept;
+
+  /**
+   * \brief Handle HTTP GET request.
+   */
+  void handleHttpGet(const protocol::http::request::HttpParser& parser);
+
+  /**
+   * \brief Handle HTTP PUT request.
+   */
+  void handleHttpPut(const protocol::http::request::HttpParser& parser);
+
+  /**
+   * \brief Handle HTTP DELETE request.
+   */
+  void handleHttpDelete(const protocol::http::request::HttpParser& parser);
+
   // ------------------ COMMON ------------------
   const std::function<void()> completion_handler_;  ///< Completion handler
   const user::UserDatabase& user_database_;         ///< User database
-  const fs::MemoryFs& filesystem_;                  ///< In-memory file storage
+  fs::MemoryFs& filesystem_;                        ///< In-memory file storage
   IOService& io_service_;                           ///< OS IO services
   Socket socket_;                                   ///< HTTP/FTP command socket
 
@@ -60,7 +135,7 @@ class Session : public std::enable_shared_from_this<Session> {
   /// Buffer for reading messages from HTTP/FTP socket
   boost::asio::streambuf input_stream_;
 
-  /// Output message queue
+  /// Output message queue storing HTTP/FTP responses ready to be sent.
   std::deque<std::string> output_queue_;
 
   // ------------------ FTP ------------------
@@ -76,48 +151,14 @@ class Session : public std::enable_shared_from_this<Session> {
   /// Output data queue
   std::deque<std::shared_ptr<fs::File>> ftp_data_buffer_;
 
-  std::shared_ptr<user::User> ftp_user_;  ///< Currently logged in user.
+  /// Currently logged in user.
+  std::shared_ptr<user::User> ftp_user_;
 
   // ------------------ HTTP ------------------
   /// Mapping from HTTP request method to the corresponding handler function.
   const std::unordered_map<protocol::http::request::HttpMethod, HttpHandler>
       http_handlers_;
-
- private:
-  // ------------------ COMMON ------------------
-  /// Disable Nagle's algorithm on HTTP/FTP command socket.
-  void setTcpNoDelay() noexcept;
-
-  /// Close HTTP/FTP command socket.
-  void closeSocket() noexcept;
-
-  /// Return information about the remote endpoint in human-readable form.
-  std::string getRemoteEndpointInfo() const noexcept;
-
-  /// Read and incoming request.
-  void readRequest() noexcept;
-
-  // ------------------ FTP ------------------
-  /// Close FTP data socket.
-  void closeFtpDataSocket() noexcept;
-
-  /// Handle FTP request.
-  void handleFtpRequest(const std::string& request) noexcept;
-
-  // ------------------ HTTP ------------------
-  /// Handle HTTP request.
-  void handleHttpRequest(std::string& request) noexcept;
-
-  /// Handle HTTP GET request.
-  void handleHttpGet(const protocol::http::request::HttpParser& parser);
-
-  /// Handle HTTP PUT request.
-  void handleHttpPut(const protocol::http::request::HttpParser& parser);
-
-  /// Handle HTTP DELETE request.
-  void handleHttpDelete(const protocol::http::request::HttpParser& parser);
 };
-
 }  // namespace object_storage
 }  // namespace server
 

@@ -4,19 +4,27 @@
 #include <boost/log/trivial.hpp>
 
 #include "protocol/detector/src/protocol_detector.hpp"
+#include "protocol/ftp/response/src/ftp_response.hpp"
+#include "protocol/http/response/src/http_response.hpp"
 
 using ErrorCode = boost::system::error_code;
 using protocol::detector::AppLayerProtocol;
 using protocol::detector::detectProtocol;
 using protocol::ftp::request::FtpParser;
+using protocol::ftp::response::FtpReplyCode;
+using protocol::ftp::response::FtpResponse;
 using protocol::http::request::HttpMethod;
 using protocol::http::request::HttpParser;
+using protocol::http::response::HttpResource;
+using protocol::http::response::HttpResponse;
+using protocol::http::response::HttpStatus;
+using user::User;
 
 namespace server {
 namespace object_storage {
 
 Session::Session(IOService& io_service, const user::UserDatabase& user_database,
-                 const fs::MemoryFs& filesystem,
+                 fs::MemoryFs& filesystem,
                  const std::function<void()>& completion_handler)
     :  // ------------------ COMMON ------------------
       completion_handler_{completion_handler},
@@ -27,7 +35,7 @@ Session::Session(IOService& io_service, const user::UserDatabase& user_database,
       serializer_{io_service_},
       // ------------------ FTP ------------------
       ftp_data_acceptor_{io_service},
-      ftp_data_serializer_(io_service),
+      ftp_data_serializer_{io_service},
       http_handlers_{
           {HttpMethod::Get,
            std::bind(&Session::handleHttpGet, this, std::placeholders::_1)},
@@ -49,7 +57,8 @@ void Session::start() noexcept {
   BOOST_LOG_TRIVIAL(debug) << "Starting session with "
                            << getRemoteEndpointInfo();
   setTcpNoDelay();
-  serializer_.post([me = shared_from_this()]() { me->readRequest(); });
+  serializer_.post(
+      [me = shared_from_this()]() { me->receiveMessageHandler(); });
 }
 
 void Session::setTcpNoDelay() noexcept {
@@ -67,21 +76,12 @@ void Session::closeSocket() noexcept {
   socket_.close(error_code);
 }
 
-void Session::closeFtpDataSocket() noexcept {
-  ErrorCode error_code;
-  auto data_socket = ftp_data_socket_.lock();
-  if (data_socket) {
-    data_socket->shutdown(Socket::shutdown_both, error_code);
-    data_socket->close(error_code);
-  }
-}
-
 std::string Session::getRemoteEndpointInfo() const noexcept {
   return socket_.remote_endpoint().address().to_string() + ":" +
          std::to_string(socket_.remote_endpoint().port());
 }
 
-void Session::readRequest() noexcept {
+void Session::receiveMessageHandler() noexcept {
   // Asynchronously read input request until CRLF symbol is found. The CRLF is
   // shared between HTTP (end of request line) and FTP (end of entire
   // request).
@@ -120,9 +120,60 @@ void Session::readRequest() noexcept {
               break;
           }
 
-          me->readRequest();
+          me->receiveMessageHandler();
         }
       }));
+}
+
+void Session::sendMessageHandler() noexcept {
+  BOOST_LOG_TRIVIAL(debug) << "Sending message:\n" << output_queue_.front();
+
+  // Get the next message from send queue and send it asynchronously.
+  boost::asio::async_write(
+      socket_, boost::asio::buffer(output_queue_.front()),
+      serializer_.wrap(
+          [me = shared_from_this()](ErrorCode error_code, std::size_t) {
+            if (!error_code) {
+              me->output_queue_.pop_front();
+
+              // If there are more messages to send, trigger this handler again.
+              // Otherwise, the thread enqueueing a new message will trigger
+              // this handler.
+              const auto write_in_progress = !me->output_queue_.empty();
+              if (write_in_progress) {
+                me->sendMessageHandler();
+              }
+            } else {
+              BOOST_LOG_TRIVIAL(error)
+                  << "Failed to send message:\n"
+                  << me->output_queue_.front() << error_code.message();
+            }
+          }));
+}
+
+void Session::sendMessage(const std::string& message) {
+  // Put the message to the send queue. If the send queue was empty before
+  // manually trigger the asynchronous send handler execution.
+  serializer_.post([me = shared_from_this(), message]() {
+    const bool write_in_progress = !me->output_queue_.empty();
+    me->output_queue_.push_back(message);
+    if (!write_in_progress) {
+      me->sendMessageHandler();
+    }
+  });
+}
+
+void Session::closeFtpDataSocket() noexcept {
+  ErrorCode error_code;
+  auto data_socket = ftp_data_socket_.lock();
+  if (data_socket) {
+    data_socket->shutdown(Socket::shutdown_both, error_code);
+    data_socket->close(error_code);
+  }
+}
+
+void Session::handleFtpRequest(const std::string& request) noexcept {
+  BOOST_LOG_TRIVIAL(debug) << "FTP request:\n" << request;
 }
 
 void Session::handleHttpRequest(std::string& request) noexcept {
@@ -140,27 +191,39 @@ void Session::handleHttpRequest(std::string& request) noexcept {
   HttpParser parser{request};
   if (!parser.isValid()) {
     BOOST_LOG_TRIVIAL(error) << "Failed to parse HTTP request:\n" << request;
-    return;
+    sendMessage(HttpResponse{HttpStatus::BadRequest});
+  } else {
+    http_handlers_.at(parser.getMethod())(parser);
   }
-
-  http_handlers_.at(parser.getMethod())(parser);
-}
-
-void Session::handleFtpRequest(const std::string& request) noexcept {
-  BOOST_LOG_TRIVIAL(debug) << "FTP request:\n" << request;
 }
 
 void Session::handleHttpGet(const HttpParser& parser) {
-  BOOST_LOG_TRIVIAL(debug) << "HTTP GET";
-  // const auto file = filesystem_.get(parser.getUri());
+  if (parser.getUri() == "/") {
+    filesystem_.add("/test.txt", "aaaa");
+    const auto file_list = filesystem_.list();
+    std::string response;
+    for (const auto& file : file_list) {
+      response += file + '\n';
+    }
+    sendMessage(HttpResponse{HttpStatus::Ok, response});
+  } else {
+    const auto [status, file] = filesystem_.get(parser.getUri());
+    switch (status) {
+      case fs::Status::FileNotFound:
+        sendMessage(HttpResponse{HttpStatus::NotFound});
+        break;
+      default:
+        sendMessage(HttpResponse{HttpStatus::Ok, file});
+        break;
+    }
+  }
+
+  user_database_.exists(User{"stary", "pijany"});
 }
 
-void Session::handleHttpPut(const HttpParser& parser) {
-  BOOST_LOG_TRIVIAL(debug) << "HTTP PUT";
-}
+void Session::handleHttpPut(const HttpParser& parser) {}
 
 void Session::handleHttpDelete(const HttpParser& parser) {
-  BOOST_LOG_TRIVIAL(debug) << "HTTP DELETE";
   // const auto result = filesystem_.remove(parser.getUri());
 }
 

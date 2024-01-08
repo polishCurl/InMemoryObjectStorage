@@ -76,11 +76,13 @@ class ObjectStorage : public IServer {
   /**
    * \brief Connection accept handler.
    *
+   * \note This method is asynchronous.
+   *
    * \param session Session associated with the connection.
    * \param error_code Connection accept status (error) code.
    */
-  void acceptConnection(const std::shared_ptr<Session>& session,
-                        ErrorCode const& error_code) noexcept;
+  void acceptConnectionHandler(const std::shared_ptr<Session>& session,
+                               ErrorCode const& error_code) noexcept;
 
   /**
    * \brief Set up server logging.

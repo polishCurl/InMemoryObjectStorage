@@ -109,14 +109,15 @@ bool ObjectStorage::setUpSessionAcceptor() noexcept {
   acceptor_.async_accept(session->getSocket(),
                          [this, session](auto error_code) {
                            open_connection_count_++;
-                           acceptConnection(session, error_code);
+                           acceptConnectionHandler(session, error_code);
                          });
 
   return true;
 }
 
-void ObjectStorage::acceptConnection(const std::shared_ptr<Session>& session,
-                                     ErrorCode const& error_code) noexcept {
+void ObjectStorage::acceptConnectionHandler(
+    const std::shared_ptr<Session>& session,
+    ErrorCode const& error_code) noexcept {
   if (error_code) {
     BOOST_LOG_TRIVIAL(error)
         << "Failed to accept session: " << error_code.message();
@@ -136,7 +137,7 @@ void ObjectStorage::acceptConnection(const std::shared_ptr<Session>& session,
   acceptor_.async_accept(new_session->getSocket(),
                          [this, new_session](auto error_code) {
                            open_connection_count_++;
-                           acceptConnection(new_session, error_code);
+                           acceptConnectionHandler(new_session, error_code);
                          });
 }
 
