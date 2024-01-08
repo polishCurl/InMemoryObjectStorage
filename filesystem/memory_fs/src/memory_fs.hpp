@@ -40,11 +40,11 @@ class MemoryFs : public IFilesystem {
   MemoryFs& operator=(const MemoryFs& other) = delete;
   MemoryFs& operator=(MemoryFs&&) = delete;
 
-  std::pair<Result, const File&> get(
+  std::pair<Status, const File&> get(
       std::string_view path) const noexcept override;
-  Result add(std::string_view path, const File& file) noexcept override;
+  Status add(std::string_view path, const File& file) noexcept override;
   FileList list() const noexcept override;
-  Result remove(std::string_view path) noexcept override;
+  Status remove(std::string_view path) noexcept override;
 
  private:
   /**

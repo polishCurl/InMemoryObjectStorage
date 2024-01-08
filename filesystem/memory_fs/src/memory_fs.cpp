@@ -2,26 +2,26 @@
 
 using namespace fs;
 
-std::pair<Result, const File&> MemoryFs::get(
+std::pair<Status, const File&> MemoryFs::get(
     std::string_view path) const noexcept {
   std::shared_lock lock(mutex_);
 
   if (!exists(path)) {
-    return {Result::FileNotFound, {}};
+    return {Status::FileNotFound, {}};
   }
 
-  return {Result::Success, fs_.at(path)};
+  return {Status::Success, fs_.at(path)};
 }
 
-Result MemoryFs::add(std::string_view path, const File& file) noexcept {
+Status MemoryFs::add(std::string_view path, const File& file) noexcept {
   std::unique_lock lock(mutex_);
 
   if (exists(path)) {
-    return Result::AlreadyExists;
+    return Status::AlreadyExists;
   }
 
   fs_[path] = file;
-  return Result::Success;
+  return Status::Success;
 }
 
 FileList MemoryFs::list() const noexcept {
@@ -35,9 +35,9 @@ FileList MemoryFs::list() const noexcept {
   return list;
 }
 
-Result MemoryFs::remove(std::string_view path) noexcept {
+Status MemoryFs::remove(std::string_view path) noexcept {
   std::unique_lock lock(mutex_);
-  return fs_.erase(path) == 1 ? Result::Success : Result::FileNotFound;
+  return fs_.erase(path) == 1 ? Status::Success : Status::FileNotFound;
 }
 
 bool MemoryFs::exists(std::string_view path) const {

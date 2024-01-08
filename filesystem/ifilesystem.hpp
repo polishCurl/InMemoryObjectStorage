@@ -9,7 +9,7 @@ namespace fs {
 /**
  * \brief Filesystem operation result.
  */
-enum class Result {
+enum class Status {
   Success,        ///< Filesystem operation completed successfully.
   FileNotFound,   ///< Specified file was not found.
   AlreadyExists,  ///< File already exists at the specified path.
@@ -39,7 +39,7 @@ class IFilesystem {
    *
    * \return Operation result and the file (if successfull).
    */
-  virtual std::pair<Result, const File&> get(
+  virtual std::pair<Status, const File&> get(
       std::string_view path) const noexcept = 0;
 
   /**
@@ -48,9 +48,9 @@ class IFilesystem {
    * \param path Path at which to add the file.
    * \param file File to add.
    *
-   * \return Result of the add operation.
+   * \return Status of the add operation.
    */
-  virtual Result add(std::string_view path, const File& file) noexcept = 0;
+  virtual Status add(std::string_view path, const File& file) noexcept = 0;
 
   /**
    * \brief List all stored objects.
@@ -64,9 +64,9 @@ class IFilesystem {
    *
    * \param path Path to the file to remove.
    *
-   * \return Result of the remove operation.
+   * \return Status of the remove operation.
    */
-  virtual Result remove(std::string_view path) noexcept = 0;
+  virtual Status remove(std::string_view path) noexcept = 0;
 };
 
 }  // namespace fs
