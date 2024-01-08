@@ -95,7 +95,7 @@ enum class HttpStatus {
 /**
  * \brief HTTP resource representation.
  */
-using HttpResource = std::string_view;
+using HttpResource = std::string;
 
 /**
  * \brief HTTP response header (name and value).
@@ -122,10 +122,10 @@ class HttpResponse : public ISerialize {
   /**
    * \brief Create HTTP response with the given status and reason phrase.
    *
-   * \param status HTTP status
    * \param reason_phrase HTTP reason phrase.
+   * \param status HTTP status
    */
-  HttpResponse(HttpStatus status, const std::string& reason_phrase) noexcept;
+  HttpResponse(const std::string& reason_phrase, HttpStatus status) noexcept;
 
   /**
    * \brief Create HTTP response with the given status and resource.
@@ -133,7 +133,7 @@ class HttpResponse : public ISerialize {
    * \param status HTTP status.
    * \param resource HTTP resource.
    */
-  HttpResponse(HttpStatus status, HttpResource resource) noexcept;
+  HttpResponse(HttpStatus status, const HttpResource& resource) noexcept;
 
   /**
    * \brief Create HTTP response with the given status and resource.
@@ -154,7 +154,7 @@ class HttpResponse : public ISerialize {
    */
   HttpResponse(HttpStatus status, const std::string& reason_phrase,
                const HttpResponseHeaders& response_headers,
-               HttpResource resource) noexcept;
+               const HttpResource& resource) noexcept;
 
   /**
    * \brief Convert HTTP response to string.

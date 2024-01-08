@@ -16,14 +16,15 @@ HttpResponse::HttpResponse(HttpStatus status) noexcept
                    {HttpResponseHeader{kContentLength, "0"}},
                    {}} {}
 
-HttpResponse::HttpResponse(HttpStatus status,
-                           const std::string& reason_phrase) noexcept
+HttpResponse::HttpResponse(const std::string& reason_phrase,
+                           HttpStatus status) noexcept
     : HttpResponse{status,
                    reason_phrase,
                    {HttpResponseHeader{kContentLength, "0"}},
                    {}} {}
 
-HttpResponse::HttpResponse(HttpStatus status, HttpResource resource) noexcept
+HttpResponse::HttpResponse(HttpStatus status,
+                           const HttpResource& resource) noexcept
     : HttpResponse{status,
                    kStatusToReason.at(status),
                    // Since we are passing resource, we need to provide content
@@ -39,7 +40,7 @@ HttpResponse::HttpResponse(HttpStatus status,
 
 HttpResponse::HttpResponse(HttpStatus status, const std::string& reason_phrase,
                            const HttpResponseHeaders& response_headers,
-                           HttpResource resource) noexcept
+                           const HttpResource& resource) noexcept
     : status_{status},
       reason_phrase_{reason_phrase},
       response_headers_{response_headers},

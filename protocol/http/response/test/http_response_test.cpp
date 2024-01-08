@@ -14,7 +14,7 @@ TEST(HttpResponseTest, Status) {
 
 TEST(HttpResponseTest, StatusAndReasonPhrase) {
   std::string reason{"I like trains"};
-  HttpResponse http{HttpStatus::NotFound, reason};
+  HttpResponse http{reason, HttpStatus::NotFound};
   ASSERT_EQ(std::string(http),
             "HTTP/1.1 404 I like trains\r\n"
             "Content-Length: 0\r\n"
