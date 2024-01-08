@@ -18,7 +18,7 @@ TEST(HttpParserTest, Put1) {
       "PUT /xampp/tests/file/check.php HTTP/1.1\r\n"
       "Host: 127.0.0.1\r\n"
       "Content-Type: application/x-www-form-urlencoded\r\n"
-      "Content-Lenght: 10\r\n"
+      "Content-Length: 10\r\n"
       "Connection: close\r\n"
       "\r\n"
       "text1=sase"};
@@ -27,7 +27,7 @@ TEST(HttpParserTest, Put1) {
   EXPECT_TRUE(http.isValid());
   EXPECT_EQ(HttpMethod::Put, http.getMethod());
   EXPECT_EQ(http.getUri(), "/xampp/tests/file/check.php");
-  ASSERT_TRUE(http["content-lenght"]);
+  ASSERT_TRUE(http["content-length"]);
   EXPECT_EQ(http.getResourceSize(), sizeof("text1=sase") - 1);
   EXPECT_EQ(http["host"], "127.0.0.1");
 }
@@ -37,7 +37,7 @@ TEST(HttpParserTest, Put2) {
       "PUT /test HTTP/1.1\r\n"
       "Host: www.myServer.com\r\n"
       "Content-Type: text/plain\r\n"
-      "Content-Lenght: 8\r\n"
+      "Content-Length: 8\r\n"
       "Accept: */*\r\n"
       "\r\n"
       "someData"};
@@ -46,7 +46,7 @@ TEST(HttpParserTest, Put2) {
   EXPECT_TRUE(http.isValid());
   EXPECT_EQ(HttpMethod::Put, http.getMethod());
   EXPECT_EQ(http.getUri(), "/test");
-  ASSERT_EQ(http["content-lenght"], "8");
+  ASSERT_EQ(http["content-length"], "8");
   EXPECT_EQ(http.getResourceSize(), 8);
   EXPECT_FALSE(http["connection"]);
 }

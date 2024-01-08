@@ -9,7 +9,7 @@ TEST(ProtocolDetectorTest, HttpPut) {
       "PUT /xampp/tests/file/check.php HTTP/1.1\r\n"
       "Host: 127.0.0.1\r\n"
       "Content-Type: application/x-www-form-urlencoded\r\n"
-      "Content-Lenght: 10\r\n"
+      "Content-Length: 10\r\n"
       "Connection: close\r\n"
       "\r\n"
       "text1=sase";
