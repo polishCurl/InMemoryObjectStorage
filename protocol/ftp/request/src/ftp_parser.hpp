@@ -70,7 +70,7 @@ class FtpParser : public IValidate {
     return tokens_;
   }
 
- protected:
+ private:
   /// Mapping from string representation of FTP command to the decoded value.
   static const std::unordered_map<std::string, FtpCommand> kCommandMap;
 

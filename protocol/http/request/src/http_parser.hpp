@@ -81,24 +81,24 @@ class HttpParser : public IMemberAccess, public IValidate {
   std::optional<std::string_view> operator[](
       const std::string&) const noexcept override;
 
- protected:
-  static constexpr std::string_view kContentLengthKey{"content-lenght"};
-
-  // Mapping ftom HTTP request header field name to value.
+ private:
+  /// Mapping ftom HTTP request header field name to value.
   using HttpHeaderFields = std::unordered_map<std::string, std::string_view>;
+
+  /// HTTP request header name for getting the resource size (content length).
+  static constexpr std::string_view kContentLengthKey{"content-lenght"};
 
   /// Mapping from string representation of HTTP method to the decoded value.
   static const std::unordered_map<std::string_view, HttpMethod> kMethodMap;
+
+  void parseRequestLine(const std::vector<std::string_view>& lines);
+  void parseHeaderFields(const std::vector<std::string_view>& lines);
 
   bool valid_;                      ///< Is HTTP request valid?
   HttpMethod method_;               ///< HTTP request method
   std::string_view uri_;            ///< HTTP URI
   std::size_t resource_size_;       ///< HTTP resource size.
   HttpHeaderFields header_fields_;  ///< HTTP header fields.
-
- private:
-  void parseRequestLine(const std::vector<std::string_view>& lines);
-  void parseHeaderFields(const std::vector<std::string_view>& lines);
 };
 
 }  // namespace request

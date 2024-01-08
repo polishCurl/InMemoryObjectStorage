@@ -163,7 +163,7 @@ class HttpResponse : public ISerialize {
    */
   operator std::string() const override;
 
- protected:
+ private:
   /// HTTP version used.
   static constexpr std::string_view kHttpVersion{"HTTP/1.1"};
 

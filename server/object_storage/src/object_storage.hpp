@@ -67,7 +67,26 @@ class ObjectStorage : public IServer {
   bool addUser(const std::string& username,
                const std::string& password) noexcept override;
 
- protected:
+ private:
+  /**
+   * \brief Set up TCP connection acceptor.
+   */
+  bool setUpSessionAcceptor() noexcept;
+
+  /**
+   * \brief Connection accept handler.
+   *
+   * \param session Session associated with the connection.
+   * \param error_code Connection accept status (error) code.
+   */
+  void acceptConnection(const std::shared_ptr<Session>& session,
+                        ErrorCode const& error_code) noexcept;
+
+  /**
+   * \brief Set up server logging.
+   */
+  void setUpLogging() noexcept;
+
   user::UserDatabase users_;  ///< Users recognised by the server
   fs::MemoryFs filesystem_;   ///< In-memory file storage
   std::string address_;       ///< Host on which to accept connections
@@ -76,19 +95,8 @@ class ObjectStorage : public IServer {
 
   ThreadPool workers_;                      ///< Server worker threads
   IOService io_service_;                    ///< OS IO services
-  Acceptor acceptor_;                       ///< TCP connections acceptor
+  Acceptor acceptor_;                       ///< TCP connection acceptor
   std::atomic<int> open_connection_count_;  ///< Open TCP connection count
-
- private:
-  /// Set up HTTP/FTP session acceptor.
-  bool setUpSessionAcceptor() noexcept;
-
-  /// Accept next HTTP/FTP session.
-  void acceptSession(const std::shared_ptr<Session>& session,
-                     ErrorCode const& error_code) noexcept;
-
-  /// Set up server logging.
-  void setUpLogging() noexcept;
 };
 
 }  // namespace object_storage

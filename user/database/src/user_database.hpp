@@ -20,11 +20,18 @@ class UserDatabase : public IUserDatabase {
   bool add(const User& user) override;
   bool exists(const User& user) const override;
 
- protected:
-  bool requirePassword(const User& user) const;
-
+ private:
   /// List of usernames not requiring password.
   static const std::unordered_set<std::string> kUsersWithoutPassword;
+
+  /**
+   * \brief Check if given user must provide password to authenticate.
+   *
+   * \param user User to check.
+   *
+   * \return True if user requires password authentication, false otherwise.
+   */
+  bool requirePassword(const User& user) const;
 
   /// List of users stored in the database.
   std::unordered_map<std::string, std::string> users_;

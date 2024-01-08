@@ -92,7 +92,7 @@ class FtpResponse : public ISerialize {
     return std::to_string(static_cast<int>(code_)) + ' ' + text_ + "\r\n";
   }
 
- protected:
+ private:
   const FtpReplyCode code_;  ///< FTP reply code.
   const std::string text_;   ///< FTP reply text.
 };

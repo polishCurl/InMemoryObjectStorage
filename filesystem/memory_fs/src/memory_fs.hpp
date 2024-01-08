@@ -46,7 +46,7 @@ class MemoryFs : public IFilesystem {
   FileList list() const noexcept override;
   Result remove(std::string_view path) noexcept override;
 
- protected:
+ private:
   /**
    * \brief Check if a file with the given path exists.
    *
