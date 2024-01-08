@@ -9,7 +9,7 @@ TEST(HttpParserTest, InitialState) {
   EXPECT_FALSE(http.isValid());
   EXPECT_EQ(HttpMethod::Unrecognized, http.getMethod());
   EXPECT_TRUE(http.getUri().empty());
-  EXPECT_FALSE(http.getResource());
+  EXPECT_EQ(http.getResourceSize(), 0);
   EXPECT_FALSE(http["content-lenght"]);
 }
 
@@ -27,8 +27,8 @@ TEST(HttpParserTest, Put1) {
   EXPECT_TRUE(http.isValid());
   EXPECT_EQ(HttpMethod::Put, http.getMethod());
   EXPECT_EQ(http.getUri(), "/xampp/tests/file/check.php");
-  EXPECT_EQ(http.getResource(), "text1=sase");
-  EXPECT_TRUE(http["content-lenght"]);
+  ASSERT_TRUE(http["content-lenght"]);
+  EXPECT_EQ(http.getResourceSize(), sizeof("text1=sase") - 1);
   EXPECT_EQ(http["host"], "127.0.0.1");
 }
 
@@ -46,8 +46,8 @@ TEST(HttpParserTest, Put2) {
   EXPECT_TRUE(http.isValid());
   EXPECT_EQ(HttpMethod::Put, http.getMethod());
   EXPECT_EQ(http.getUri(), "/test");
-  EXPECT_EQ(http.getResource(), "someData");
-  EXPECT_EQ(http["content-lenght"], "8");
+  ASSERT_EQ(http["content-lenght"], "8");
+  EXPECT_EQ(http.getResourceSize(), 8);
   EXPECT_FALSE(http["connection"]);
 }
 
@@ -71,8 +71,8 @@ TEST(HttpParserTest, Get1) {
   EXPECT_TRUE(http.isValid());
   EXPECT_EQ(HttpMethod::Get, http.getMethod());
   EXPECT_EQ(http.getUri(), "/");
-  EXPECT_FALSE(http.getResource());
-  EXPECT_FALSE(http["content-lenght"]);
+  ASSERT_FALSE(http["content-lenght"]);
+  EXPECT_EQ(http.getResourceSize(), 0);
   EXPECT_TRUE(http["connection"]);
 }
 
@@ -85,7 +85,7 @@ TEST(HttpParserTest, Get2) {
   EXPECT_TRUE(http.isValid());
   EXPECT_EQ(HttpMethod::Get, http.getMethod());
   EXPECT_EQ(http.getUri(), "/index.html");
-  EXPECT_FALSE(http.getResource());
+  EXPECT_EQ(http.getResourceSize(), 0);
 }
 
 TEST(HttpParserTest, Delete) {
@@ -99,7 +99,7 @@ TEST(HttpParserTest, Delete) {
   EXPECT_TRUE(http.isValid());
   EXPECT_EQ(HttpMethod::Delete, http.getMethod());
   EXPECT_EQ(http.getUri(), "/echo/delete/json");
-  EXPECT_FALSE(http.getResource());
+  EXPECT_EQ(http.getResourceSize(), 0);
 }
 
 TEST(HttpParserTest, MethodNotRecognised) {
@@ -110,4 +110,5 @@ TEST(HttpParserTest, MethodNotRecognised) {
   const auto http = HttpParser(http_request);
   EXPECT_FALSE(http.isValid());
   EXPECT_EQ(HttpMethod::Unrecognized, http.getMethod());
+  EXPECT_EQ(http.getResourceSize(), 0);
 }

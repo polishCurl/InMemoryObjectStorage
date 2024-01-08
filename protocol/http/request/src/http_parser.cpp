@@ -16,15 +16,16 @@ const std::unordered_map<std::string_view, HttpMethod> HttpParser::kMethodMap =
 };
 
 HttpParser::HttpParser(const std::string& buffer) noexcept
-    : valid_{false}, method_{HttpMethod::Unrecognized} {
+    : valid_{false}, method_{HttpMethod::Unrecognized}, resource_size_{0} {
   if (!buffer.empty()) {
     try {
       std::vector<std::string_view> lines{utils::split(buffer, "\r\n")};
       parseRequestLine(lines);
       parseHeaderFields(lines);
 
-      if (!lines.back().empty()) {
-        resource_ = lines.back();
+      if (std::string key{kContentLengthKey};
+          header_fields_.find(key) != header_fields_.end()) {
+        resource_size_ = std::atoi(header_fields_.at(key).data());
       }
 
       valid_ = true;
