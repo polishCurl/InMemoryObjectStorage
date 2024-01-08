@@ -8,6 +8,7 @@ TEST(HttpResponseTest, Status) {
   HttpResponse http{HttpStatus::Created};
   ASSERT_EQ(std::string(http),
             "HTTP/1.1 201 Created\r\n"
+            "Content-Length: 0\r\n"
             "\r\n");
 }
 
@@ -16,6 +17,7 @@ TEST(HttpResponseTest, StatusAndReasonPhrase) {
   HttpResponse http{HttpStatus::NotFound, reason};
   ASSERT_EQ(std::string(http),
             "HTTP/1.1 404 I like trains\r\n"
+            "Content-Length: 0\r\n"
             "\r\n");
 }
 

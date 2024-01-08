@@ -7,21 +7,30 @@ namespace http {
 namespace response {
 
 HttpResponse::HttpResponse(HttpStatus status) noexcept
-    // Assign the default reason phrase from the HTTP status.
-    : HttpResponse{status, kStatusToReason.at(status), {}, {}} {}
+
+    : HttpResponse{status,
+                   // Assign the default reason phrase from the HTTP status.
+                   kStatusToReason.at(status),
+                   // Even if we only send status code (no resource), curl still
+                   // expects the Content-Length to be set to 0.
+                   {HttpResponseHeader{kContentLength, "0"}},
+                   {}} {}
 
 HttpResponse::HttpResponse(HttpStatus status,
                            const std::string& reason_phrase) noexcept
-    : HttpResponse{status, reason_phrase, {}, {}} {}
+    : HttpResponse{status,
+                   reason_phrase,
+                   {HttpResponseHeader{kContentLength, "0"}},
+                   {}} {}
 
 HttpResponse::HttpResponse(HttpStatus status, HttpResource resource) noexcept
-    : HttpResponse{status, kStatusToReason.at(status),
+    : HttpResponse{status,
+                   kStatusToReason.at(status),
                    // Since we are passing resource, we need to provide content
                    // type and length in HTTP resource headers.
-                   HttpResponseHeaders{
-                       {HttpResponseHeader{kContentType, kContentTypeValue},
-                        HttpResponseHeader{kContentLength,
-                                           std::to_string(resource.size())}}},
+                   {{HttpResponseHeader{kContentType, kContentTypeValue},
+                     HttpResponseHeader{kContentLength,
+                                        std::to_string(resource.size())}}},
                    resource} {}
 
 HttpResponse::HttpResponse(HttpStatus status,
