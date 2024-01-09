@@ -17,6 +17,7 @@ using protocol::http::request::HttpMethod;
 using protocol::http::request::HttpParser;
 using protocol::http::response::HttpResource;
 using protocol::http::response::HttpResponse;
+using protocol::http::response::HttpResponseHeaders;
 using protocol::http::response::HttpStatus;
 using user::User;
 
@@ -24,11 +25,12 @@ namespace server {
 namespace object_storage {
 
 Session::Session(IOService& io_service, const user::UserDatabase& user_database,
-                 fs::MemoryFs& filesystem,
+                 bool authenticate, fs::MemoryFs& filesystem,
                  const std::function<void()>& completion_handler)
     :  // ------------------ COMMON ------------------
       completion_handler_{completion_handler},
       user_database_{user_database},
+      authenticate_{authenticate},
       filesystem_{filesystem},
       io_service_{io_service},
       socket_{io_service_},
@@ -192,13 +194,31 @@ void Session::handleHttpRequest(std::string& request) noexcept {
   if (!parser.isValid()) {
     BOOST_LOG_TRIVIAL(error) << "Failed to parse HTTP request:\n" << request;
     sendMessage(HttpResponse{HttpStatus::BadRequest});
+
+  } else if (!authenticateHttpUser(parser)) {
+    sendMessage(HttpResponse{HttpStatus::Unauthorized,
+                             HttpResponseHeaders{{"WWW-Authenticate", "Basic"},
+                                                 {"Content-Length", "0"}}});
   } else {
     http_handlers_.at(parser.getMethod())(parser);
   }
 }
 
 bool Session::authenticateHttpUser(const HttpParser& parser) noexcept {
-  return user_database_.exists(User{"stary", "pijany"});
+  if (authenticate_) {
+    const auto auth_info = parser.getAuthInfo();
+    user::User user_to_auth{auth_info->username, auth_info->password};
+    const auto user_exists = user_database_.exists(user_to_auth);
+
+    if (!user_exists) {
+      BOOST_LOG_TRIVIAL(error)
+          << "Failed to authenticate user " << user_to_auth;
+    }
+
+    return user_exists;
+  }
+
+  return true;
 }
 
 void Session::handleHttpGet(const HttpParser& parser) {

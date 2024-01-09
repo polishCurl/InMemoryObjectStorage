@@ -47,9 +47,11 @@ class ObjectStorage : public IServer {
    * \param address The host to accept incoming connections from.
    * \param port The port to start the server on.
    * \param log_level Logging level used by the server (logging verbosity).
+   * \param authenticate Enable/disable user authentication.
    */
   ObjectStorage(const std::string& address = std::string("0.0.0.0"),
-                uint16_t port = 21, LogLevel log_level = LogLevel::info);
+                uint16_t port = 21, LogLevel log_level = LogLevel::info,
+                bool authenticate = false);
 
   // No use case for copying and moving for now.
   ObjectStorage(ObjectStorage&&) = delete;
@@ -99,6 +101,7 @@ class ObjectStorage : public IServer {
   IOService io_service_;                    ///< OS IO services
   Acceptor acceptor_;                       ///< TCP connection acceptor
   std::atomic<int> open_connection_count_;  ///< Open TCP connection count
+  const bool authenticate_;                 ///< Authenticate users
 };
 
 }  // namespace object_storage

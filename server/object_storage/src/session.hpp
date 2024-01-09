@@ -23,8 +23,17 @@ namespace object_storage {
 
 class Session : public std::enable_shared_from_this<Session> {
  public:
+  /**
+   * \brief Create a new session.
+   *
+   * \param io_service OS IO services.
+   * \param user_database Users recognized by the server.
+   * \param authenticate Enable/disable user authentication.
+   * \param filesystem Filesystem to manage.
+   * \param completion_handler Handler to invoke once this session is destroyed.
+   */
   Session(IOService& io_service, const user::UserDatabase& user_database,
-          fs::MemoryFs& filesystem,
+          bool authenticate, fs::MemoryFs& filesystem,
           const std::function<void()>& completion_handler);
 
   // Disable copy and move since we are inheriting from shared_from_this
@@ -147,6 +156,7 @@ class Session : public std::enable_shared_from_this<Session> {
   // ------------------ COMMON ------------------
   const std::function<void()> completion_handler_;  ///< Completion handler
   const user::UserDatabase& user_database_;         ///< User database
+  const bool authenticate_;                         ///< Authenticate users
   fs::MemoryFs& filesystem_;                        ///< In-memory file storage
   IOService& io_service_;                           ///< OS IO services
   Socket socket_;                                   ///< HTTP/FTP command socket

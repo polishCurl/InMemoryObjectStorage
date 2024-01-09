@@ -10,13 +10,15 @@ namespace server {
 namespace object_storage {
 
 ObjectStorage::ObjectStorage(const std::string& address, uint16_t port,
-                             LogLevel log_level)
+                             LogLevel log_level, bool authenticate)
     : address_{address},
       port_{port},
       log_level_{log_level},
       acceptor_{io_service_},
-      open_connection_count_{0} {
+      open_connection_count_{0},
+      authenticate_{authenticate} {
   setUpLogging();
+  BOOST_LOG_TRIVIAL(info) << "User authentication: " << authenticate_;
 }
 
 bool ObjectStorage::start(std::size_t thread_count) {
@@ -103,8 +105,9 @@ bool ObjectStorage::setUpSessionAcceptor() noexcept {
     return false;
   }
 
-  auto session = std::make_shared<Session>(
-      io_service_, users_, filesystem_, [this]() { open_connection_count_--; });
+  auto session =
+      std::make_shared<Session>(io_service_, users_, authenticate_, filesystem_,
+                                [this]() { open_connection_count_--; });
 
   acceptor_.async_accept(session->getSocket(),
                          [this, session](auto error_code) {
@@ -131,8 +134,9 @@ void ObjectStorage::acceptConnectionHandler(
 
   session->start();
 
-  auto new_session = std::make_shared<Session>(
-      io_service_, users_, filesystem_, [this]() { open_connection_count_--; });
+  auto new_session =
+      std::make_shared<Session>(io_service_, users_, authenticate_, filesystem_,
+                                [this]() { open_connection_count_--; });
 
   acceptor_.async_accept(new_session->getSocket(),
                          [this, new_session](auto error_code) {
