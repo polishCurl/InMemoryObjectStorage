@@ -1,5 +1,7 @@
 #include "user/database/src/user_database.hpp"
 
+#include <sstream>
+
 #include "gtest/gtest.h"
 
 using namespace user;
@@ -20,4 +22,11 @@ TEST(UserDatabaseTest, AddUser) {
   EXPECT_TRUE(db.exists({"BMW", "m340i"}));
   EXPECT_FALSE(db.add({"BMW", "M3"}));
   EXPECT_TRUE(db.add({"Audi", "m340i"}));
+}
+
+TEST(UserTest, StreamInsertion) {
+  User user{"Jan Pawel", "1670"};
+  std::stringstream ss;
+  ss << user;
+  EXPECT_EQ(ss.str(), "Jan Pawel:1670");
 }

@@ -1,6 +1,7 @@
 #ifndef USER_IUSER_DATABASE_HPP
 #define USER_IUSER_DATABASE_HPP
 
+#include <iostream>
 #include <string>
 
 namespace user {
@@ -12,6 +13,19 @@ struct User {
   std::string username;  ///< Username.
   std::string password;  ///< Password used to authenticate user.
 };
+
+/**
+ * \brief Stream insertion operator for User class.
+ *
+ * \param os Output stream.
+ * \param user User to insert into the stream.
+ *
+ * \return Updated output stream.
+ */
+inline std::ostream& operator<<(std::ostream& os, const User& user) {
+  os << user.username << ':' << user.password;
+  return os;
+}
 
 /**
  * \brief User database interface.
