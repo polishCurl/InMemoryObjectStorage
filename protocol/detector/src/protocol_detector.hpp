@@ -18,7 +18,7 @@ enum class AppLayerProtocol {
 /**
  * \brief Detect internet application layer protocol from the input buffer.
  *
- * \warning This implementation classifies every non-HTTP packet as FTP.
+ * \attention This implementation classifies every non-HTTP packet as FTP.
  *
  * \param buffer Input internet application-layer buffer.
  *
