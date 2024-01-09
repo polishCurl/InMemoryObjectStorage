@@ -81,3 +81,15 @@ TEST(ToLowerCase, SpecialChars) {
   toLowerCase(str);
   EXPECT_EQ("_a1be*z/ ", str);
 }
+
+TEST(DecodeBase64, Decode) {
+  std::string str{"_A1Be*Z/ "};
+  toLowerCase(str);
+  EXPECT_EQ("Many hands make light work.",
+            decode_base64("TWFueSBoYW5kcyBtYWtlIGxpZ2h0IHdvcmsu"));
+  EXPECT_EQ("light wor", decode_base64("bGlnaHQgd29y"));
+  EXPECT_EQ("admin:4321", decode_base64("YWRtaW46NDMyMQ=="));
+
+  EXPECT_FALSE(decode_base64("I like trains"));
+  EXPECT_FALSE(decode_base64("admin:4321"));
+}

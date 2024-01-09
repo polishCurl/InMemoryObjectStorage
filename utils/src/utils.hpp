@@ -1,6 +1,7 @@
 #ifndef UTILS_SRC_UTILS_HPP
 #define UTILS_SRC_UTILS_HPP
 
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -30,6 +31,15 @@ void toLowerCase(std::string& text) noexcept;
  * \param text Input string.
  */
 void toUpperCase(std::string& text) noexcept;
+
+/**
+ * \brief Decode a base64-encoded string
+ *
+ * \param input Input string encoded in Base 64.
+ *
+ * \return Decoded string, if decoding was successful.
+ */
+std::optional<std::string> decode_base64(const std::string& input);
 
 }  // namespace utils
 
