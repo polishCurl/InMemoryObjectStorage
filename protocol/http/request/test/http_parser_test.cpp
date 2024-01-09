@@ -131,6 +131,27 @@ TEST(HttpParserTest, BasicAuthenticationEmptyUserAndPass) {
   EXPECT_EQ(http.getResourceSize(), 0);
 }
 
+TEST(HttpParserTest, BasicAuthenticationNotBase64) {
+  const std::string http_request{
+      "GET /index.html HTTP/1.1\r\n"
+      "Authorization: Basic Iam_not_base_64\r\n"
+      "\r\n"};
+
+  HttpParser http{http_request};
+  ASSERT_TRUE(http.isValid());
+  ASSERT_FALSE(http.getAuthInfo());
+}
+
+TEST(HttpParserTest, BasicAuthenticationMissing) {
+  const std::string http_request{
+      "GET /index.html HTTP/1.1\r\n"
+      "\r\n"};
+
+  HttpParser http{http_request};
+  ASSERT_TRUE(http.isValid());
+  ASSERT_FALSE(http.getAuthInfo());
+}
+
 TEST(HttpParserTest, MethodNotRecognised) {
   const std::string http_request{
       "POST /index.html HTTP/1.1\r\n"
