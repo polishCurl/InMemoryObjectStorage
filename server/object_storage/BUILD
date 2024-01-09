@@ -8,7 +8,10 @@ cc_library(
         "src/object_storage.hpp",
         "src/session.hpp",
     ],
-    visibility = ["//:__pkg__"],
+    visibility = [
+        "//:__pkg__",
+        "//test:__subpackages__",
+    ],
     deps = [
         "//filesystem/memory_fs",
         "//protocol/detector:protocol_detector",
