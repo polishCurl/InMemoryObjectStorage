@@ -25,6 +25,14 @@ enum class HttpMethod {
 };
 
 /**
+ * \brief HTTP basic authentication info.
+ */
+struct HttpAuthInfo {
+  std::string username;  ///< Username
+  std::string password;  ///< Password
+};
+
+/**
  * \brief HTTP request parser.
  *
  * Extracts relevant information from HTTP request.
@@ -81,12 +89,22 @@ class HttpParser : public IMemberAccess, public IValidate {
   std::optional<std::string_view> operator[](
       const std::string&) const noexcept override;
 
+  /**
+   * \brief Return HTTP basic authentication info.
+   *
+   * \return HTTP Authorization header value, if present.
+   */
+  std::optional<HttpAuthInfo> getAuthInfo() const noexcept;
+
  private:
   /// Mapping ftom HTTP request header field name to value.
   using HttpHeaderFields = std::unordered_map<std::string, std::string_view>;
 
   /// HTTP request header name for getting the resource size (content length).
   static constexpr std::string_view kContentLengthKey{"content-length"};
+
+  /// HTTP request header name for getting the HTTP basic authentication info.
+  static constexpr std::string_view kAuthenticationKey{"authorization"};
 
   /// Mapping from string representation of HTTP method to the decoded value.
   static const std::unordered_map<std::string_view, HttpMethod> kMethodMap;

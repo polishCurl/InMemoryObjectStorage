@@ -63,6 +63,24 @@ void HttpParser::parseHeaderFields(const std::vector<std::string_view>& lines) {
   }
 }
 
+std::optional<HttpAuthInfo> HttpParser::getAuthInfo() const noexcept {
+  std::string key{kAuthenticationKey};
+  const auto value = (*this)[key];
+  if (!value) {
+    return {};
+  }
+
+  const auto auth_data = std::string{utils::split(*value, " ")[1]};
+  const auto decoded_auth_data = utils::decode_base64(auth_data);
+  if (!decoded_auth_data) {
+    return {};
+  }
+
+  const auto user_and_pass = utils::split(*decoded_auth_data, ":");
+  return HttpAuthInfo{std::string{user_and_pass[0]},
+                      std::string{user_and_pass[1]}};
+}
+
 }  // namespace request
 }  // namespace http
 }  // namespace protocol

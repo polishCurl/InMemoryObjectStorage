@@ -92,13 +92,42 @@ TEST(HttpParserTest, Delete) {
   const std::string http_request{
       "DELETE /echo/delete/json HTTP/1.1\r\n"
       "Host: reqbin.com\r\n"
-      "Authorization: Bearer mt0dgHmLJMVQhvjpNXDyA83vA_PxH23Y\r\n"
       "\r\n"};
 
   HttpParser http{http_request};
   EXPECT_TRUE(http.isValid());
   EXPECT_EQ(HttpMethod::Delete, http.getMethod());
   EXPECT_EQ(http.getUri(), "/echo/delete/json");
+  EXPECT_EQ(http.getResourceSize(), 0);
+}
+
+TEST(HttpParserTest, BasicAuthentication) {
+  const std::string http_request{
+      "DELETE /echo/delete/json HTTP/1.1\r\n"
+      "Authorization: Bearer UmljazpzQW5jaGVa\r\n"
+      "\r\n"};
+
+  HttpParser http{http_request};
+  ASSERT_TRUE(http.isValid());
+  ASSERT_EQ(http["authorization"], "Bearer UmljazpzQW5jaGVa");
+  ASSERT_TRUE(http.getAuthInfo());
+  EXPECT_EQ(http.getAuthInfo()->username, "Rick");
+  EXPECT_EQ(http.getAuthInfo()->password, "sAncheZ");
+  EXPECT_EQ(http.getResourceSize(), 0);
+}
+
+TEST(HttpParserTest, BasicAuthenticationEmptyUserAndPass) {
+  const std::string http_request{
+      "GET /index.html HTTP/1.1\r\n"
+      "Authorization: Bearer Og==\r\n"
+      "\r\n"};
+
+  HttpParser http{http_request};
+  ASSERT_TRUE(http.isValid());
+  ASSERT_EQ(http["authorization"], "Bearer Og==");
+  ASSERT_TRUE(http.getAuthInfo());
+  EXPECT_EQ(http.getAuthInfo()->username, "");
+  EXPECT_EQ(http.getAuthInfo()->password, "");
   EXPECT_EQ(http.getResourceSize(), 0);
 }
 
