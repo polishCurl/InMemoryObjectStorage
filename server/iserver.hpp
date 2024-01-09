@@ -22,14 +22,6 @@ class IServer {
   virtual bool start(std::size_t thread_count) = 0;
 
   /**
-   * \brief Stop server.
-   *
-   * \note All operations will be cancelled as fast as possible. The clients
-   * will not be informed about the shutdown.
-   */
-  virtual void stop() = 0;
-
-  /**
    * \brief Get the port on which server is listening.
    *
    * \return The port number.

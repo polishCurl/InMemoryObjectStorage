@@ -62,7 +62,6 @@ class ObjectStorage : public IServer {
   ~ObjectStorage() { stop(); };
 
   bool start(std::size_t thread_count = 1) override;
-  void stop() override;
 
   inline std::uint16_t getPort() const noexcept override { return port_; };
   inline std::string getAddress() const noexcept override { return address_; }
@@ -70,6 +69,11 @@ class ObjectStorage : public IServer {
                const std::string& password) noexcept override;
 
  private:
+  /**
+   * \brief Stop server.
+   */
+  void stop();
+
   /**
    * \brief Set up TCP connection acceptor.
    */
