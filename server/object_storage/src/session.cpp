@@ -43,12 +43,7 @@ Session::Session(IOService& io_service, const user::UserDatabase& user_database,
            std::bind(&Session::handleHttpPut, this, std::placeholders::_1)},
           {HttpMethod::Delete,
            std::bind(&Session::handleHttpDelete, this, std::placeholders::_1)},
-      } {
-  // TODO: Remove
-  filesystem_.add("/test.txt", "aaaa");
-  filesystem_.add("/yolo/test.txt", "x");
-  filesystem_.add("/temp.json", "json");
-}
+      } {}
 
 Session::~Session() {
   closeSocket();
@@ -191,6 +186,8 @@ void Session::handleHttpRequest(std::string& request) noexcept {
 
   BOOST_LOG_TRIVIAL(debug) << "HTTP request:\n" << request;
 
+  // If request is valid, delegate it to the right handler based on the HTTP
+  // method.
   HttpParser parser{request};
   if (!parser.isValid()) {
     BOOST_LOG_TRIVIAL(error) << "Failed to parse HTTP request:\n" << request;
@@ -200,33 +197,44 @@ void Session::handleHttpRequest(std::string& request) noexcept {
   }
 }
 
+bool Session::authenticateHttpUser(const HttpParser& parser) noexcept {
+  return user_database_.exists(User{"stary", "pijany"});
+}
+
 void Session::handleHttpGet(const HttpParser& parser) {
   if (parser.getUri() == "/") {
+    // If request has 'GET /' format, list all files stored in the filesystem.
     const auto file_list = filesystem_.list();
     std::string response;
     for (const auto& file : file_list) {
       response += file + '\n';
     }
     sendMessage(HttpResponse{HttpStatus::Ok, response});
+
   } else {
-    const auto [status, file] = filesystem_.get(parser.getUri());
+    // Otherwise, get the file from the filesystem and send it in response (if
+    // it was found).
+    const auto [status, file] = filesystem_.get(std::string{parser.getUri()});
     switch (status) {
+      case fs::Status::Success:
+        sendMessage(HttpResponse{HttpStatus::Ok, file});
+        break;
       case fs::Status::FileNotFound:
         sendMessage(HttpResponse{HttpStatus::NotFound});
         break;
       default:
-        sendMessage(HttpResponse{HttpStatus::Ok, file});
+        sendMessage(HttpResponse{HttpStatus::InternalServerError});
         break;
     }
   }
-
-  user_database_.exists(User{"stary", "pijany"});
 }
 
 void Session::handleHttpPut(const HttpParser& parser) {
   ErrorCode error_code;
   const auto file_size = parser.getResourceSize();
-  const auto& filename = parser.getUri();
+  const auto filename = std::string{parser.getUri()};
+
+  // Read the HTTP message body containing the content/resource/file.
   auto bytes_read =
       boost::asio::read(socket_, input_stream_,
                         boost::asio::transfer_exactly(file_size), error_code);
@@ -240,22 +248,37 @@ void Session::handleHttpPut(const HttpParser& parser) {
     fs::File file(boost::asio::buffers_begin(bufs),
                   boost::asio::buffers_begin(bufs) + file_size);
 
-    const auto status = filesystem_.add(filename, file);
+    const auto status = filesystem_.add(std::string{filename}, file);
     switch (status) {
+      case fs::Status::Success:
+        BOOST_LOG_TRIVIAL(info) << "Saved file: " << filename;
+        sendMessage(HttpResponse{HttpStatus::Created});
+        break;
       case fs::Status::AlreadyExists:
         sendMessage(HttpResponse{HttpStatus::NotFound});
         break;
       default:
-        sendMessage(HttpResponse{HttpStatus::Created});
+        sendMessage(HttpResponse{HttpStatus::InternalServerError});
         break;
     }
-
-    BOOST_LOG_TRIVIAL(debug) << "Saved file " << filename;
   }
 }
 
 void Session::handleHttpDelete(const HttpParser& parser) {
-  // const auto result = filesystem_.remove(parser.getUri());
+  const auto& filename = std::string{parser.getUri()};
+  const auto status = filesystem_.remove(filename);
+  switch (status) {
+    case fs::Status::Success:
+      BOOST_LOG_TRIVIAL(info) << "Deleted file: " << filename;
+      sendMessage(HttpResponse{HttpStatus::Ok});
+      break;
+    case fs::Status::FileNotFound:
+      sendMessage(HttpResponse{HttpStatus::NotFound});
+      break;
+    default:
+      sendMessage(HttpResponse{HttpStatus::InternalServerError});
+      break;
+  }
 }
 
 }  // namespace object_storage

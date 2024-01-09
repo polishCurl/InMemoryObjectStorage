@@ -108,17 +108,39 @@ class Session : public std::enable_shared_from_this<Session> {
   void handleHttpRequest(std::string& request) noexcept;
 
   /**
+   * \brief Authenticate HTTP user.
+   *
+   * Use HTTP basic authentication to check if user with given username and
+   * password can access the server.
+   *
+   * \note There is only a single HTTP realm defined. User has either R/W access
+   * to all server resources or no access at all.
+   *
+   * \param parser Parsed HTTP request.
+   *
+   * \return True if user was authenticated successfully, false otherwise.
+   */
+  bool authenticateHttpUser(
+      const protocol::http::request::HttpParser& parser) noexcept;
+
+  /**
    * \brief Handle HTTP GET request.
+   *
+   * \param parser Parsed HTTP request.
    */
   void handleHttpGet(const protocol::http::request::HttpParser& parser);
 
   /**
    * \brief Handle HTTP PUT request.
+   *
+   * \param parser Parsed HTTP request.
    */
   void handleHttpPut(const protocol::http::request::HttpParser& parser);
 
   /**
    * \brief Handle HTTP DELETE request.
+   *
+   * \param parser Parsed HTTP request.
    */
   void handleHttpDelete(const protocol::http::request::HttpParser& parser);
 
