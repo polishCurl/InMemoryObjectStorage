@@ -91,7 +91,7 @@ void Session::receiveMessageHandler() noexcept {
                                                  std::size_t header_length) {
         if (error_code) {
           if (error_code == boost::asio::error::eof) {
-            BOOST_LOG_TRIVIAL(error)
+            BOOST_LOG_TRIVIAL(info)
                 << "Connection closed by " << me->getRemoteEndpointInfo();
           } else {
             BOOST_LOG_TRIVIAL(error)
