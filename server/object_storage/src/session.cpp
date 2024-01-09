@@ -26,6 +26,7 @@ namespace object_storage {
 
 Session::Session(IOService& io_service, const user::UserDatabase& user_database,
                  bool authenticate, fs::MemoryFs& filesystem,
+                 PortRange ftp_port_range,
                  const std::function<void()>& completion_handler)
     :  // ------------------ COMMON ------------------
       completion_handler_{completion_handler},
@@ -38,6 +39,7 @@ Session::Session(IOService& io_service, const user::UserDatabase& user_database,
       // ------------------ FTP ------------------
       ftp_data_acceptor_{io_service},
       ftp_data_serializer_{io_service},
+      ftp_port_range_{ftp_port_range},
       http_handlers_{
           {HttpMethod::Get,
            std::bind(&Session::handleHttpGet, this, std::placeholders::_1)},
@@ -59,6 +61,12 @@ void Session::start() noexcept {
   setTcpNoDelay();
   serializer_.post(
       [me = shared_from_this()]() { me->receiveMessageHandler(); });
+
+  // Send 'ready for new user' message only if we know that the client is FTP.
+  const auto client_port = socket_.remote_endpoint().port();
+  if ((client_port >= ftp_port_range_.min_port) &&
+      (client_port <= ftp_port_range_.max_port))
+    sendMessage(FtpResponse(FtpReplyCode::SERVICE_READY_FOR_NEW_USER));
 }
 
 void Session::setTcpNoDelay() noexcept {
@@ -108,6 +116,7 @@ void Session::receiveMessageHandler() noexcept {
           std::string packet;
           packet.resize(header_length);
           stream.read(&packet[0], header_length);
+          BOOST_LOG_TRIVIAL(debug) << "PACKET:\n" << packet;
           const auto app_layer_protocol = detectProtocol(packet);
 
           switch (app_layer_protocol) {

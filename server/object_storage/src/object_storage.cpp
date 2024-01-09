@@ -10,19 +10,29 @@ namespace server {
 namespace object_storage {
 
 ObjectStorage::ObjectStorage(const std::string& address, uint16_t port,
-                             LogLevel log_level, bool authenticate)
+                             LogLevel log_level, bool authenticate,
+                             PortRange ftp_range)
     : address_{address},
       port_{port},
       log_level_{log_level},
       acceptor_{io_service_},
       open_connection_count_{0},
-      authenticate_{authenticate} {
+      authenticate_{authenticate},
+      ftp_port_range_{ftp_range} {
   setUpLogging();
   BOOST_LOG_TRIVIAL(info) << "User authentication: " << authenticate_;
 }
 
 bool ObjectStorage::start(std::size_t thread_count) {
   if (thread_count == 0) {
+    BOOST_LOG_TRIVIAL(info) << "No threads were provided";
+    return false;
+  }
+
+  if (ftp_port_range_.min_port >= ftp_port_range_.max_port) {
+    BOOST_LOG_TRIVIAL(info)
+        << "Invalid FTP port range provided (" << ftp_port_range_.min_port
+        << ',' << ftp_port_range_.max_port << ')';
     return false;
   }
 
@@ -37,6 +47,10 @@ bool ObjectStorage::start(std::size_t thread_count) {
   BOOST_LOG_TRIVIAL(info) << "Server listening at "
                           << acceptor_.local_endpoint().address() << ':'
                           << acceptor_.local_endpoint().port();
+
+  BOOST_LOG_TRIVIAL(info) << "Using client port numbers "
+                          << ftp_port_range_.min_port << '-'
+                          << ftp_port_range_.max_port << " for FTP";
 
   return true;
 }
@@ -105,9 +119,9 @@ bool ObjectStorage::setUpSessionAcceptor() noexcept {
     return false;
   }
 
-  auto session =
-      std::make_shared<Session>(io_service_, users_, authenticate_, filesystem_,
-                                [this]() { open_connection_count_--; });
+  auto session = std::make_shared<Session>(
+      io_service_, users_, authenticate_, filesystem_, ftp_port_range_,
+      [this]() { open_connection_count_--; });
 
   acceptor_.async_accept(session->getSocket(),
                          [this, session](auto error_code) {
@@ -134,9 +148,9 @@ void ObjectStorage::acceptConnectionHandler(
 
   session->start();
 
-  auto new_session =
-      std::make_shared<Session>(io_service_, users_, authenticate_, filesystem_,
-                                [this]() { open_connection_count_--; });
+  auto new_session = std::make_shared<Session>(
+      io_service_, users_, authenticate_, filesystem_, ftp_port_range_,
+      [this]() { open_connection_count_--; });
 
   acceptor_.async_accept(new_session->getSocket(),
                          [this, new_session](auto error_code) {

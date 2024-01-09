@@ -30,8 +30,17 @@ static constexpr std::string_view kPassword{"admin4321"};
 /// Default hostname used for testing.
 static constexpr std::string_view kHostname{"127.0.0.1"};
 
-/// Default port number used for testing.
-static constexpr std::uint16_t kPortId{1670};
+/// Default server port number used for testing.
+static constexpr std::uint16_t kServerPortId{1670};
+
+/// Default minimum client port number used for HTTP.
+static constexpr std::uint16_t kMinHttpClientPortId{50000};
+
+/// Default maximum client port number used for HTTP.
+static constexpr std::uint16_t kMaxHttpClientPortId{51000};
+
+/// Default client port number used for HTTP.
+// static constexpr std::uint16_t kFtpClientPortId{2147};
 
 /// Default log level used for the server.
 static constexpr LogLevel kServerLogLevel{LogLevel::error};
@@ -56,7 +65,7 @@ static bool curl(const std::string& uri, const std::string& method,
                  bool authenticate = false,
                  std::string filename = std::string{kOutFileName},
                  const std::string& host = std::string{kHostname},
-                 std::uint16_t port = kPortId)
+                 std::uint16_t port = kServerPortId)
 
 {
   static constexpr std::array<std::string_view, 2> kHttpDownloadMethods{"GET",
@@ -81,6 +90,9 @@ static bool curl(const std::string& uri, const std::string& method,
     command += " --user \"" + std::string{kUsername} + ':' +
                std::string{kPassword} + '\"';
   }
+
+  command += "  --local-port " + std::to_string(kMinHttpClientPortId) + '-' +
+             std::to_string(kMaxHttpClientPortId);
 
   // command += "-w \"%{http_code}\n\" ";
   // std::cout << std::ifstream(kStatusFileName).rdbuf();
@@ -129,8 +141,8 @@ class HttpFixture : public ::testing::TestWithParam<TestParams> {
     authenticate_ = authenticate;
     thread_count_ = thread_count;
 
-    server_ = std::make_unique<ObjectStorage>(std::string{kHostname}, kPortId,
-                                              kServerLogLevel, authenticate_);
+    server_ = std::make_unique<ObjectStorage>(
+        std::string{kHostname}, kServerPortId, kServerLogLevel, authenticate_);
     EXPECT_TRUE(
         server_->addUser(std::string{kUsername}, std::string{kPassword}));
     ASSERT_TRUE(server_->start(thread_count_));

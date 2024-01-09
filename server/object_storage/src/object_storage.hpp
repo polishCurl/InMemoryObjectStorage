@@ -41,17 +41,20 @@ class ObjectStorage : public IServer {
    * and FTP requests on the given port and accept connections from the given
    * network interface.
    *
-   * \note The default port number 21 requires the application to have root
-   * privileges.
+   * \attention The object storage constructor accepts FTP port range as an
+   * argument. This argument is use to distinguish between HTTP and FTP clients
+   * establishing connection with this server. All client ports outside the FTP
+   * range are assumed HTTP.
    *
    * \param address The host to accept incoming connections from.
    * \param port The port to start the server on.
    * \param log_level Logging level used by the server (logging verbosity).
    * \param authenticate Enable/disable user authentication.
+   * \param ftp_range Client port numbers to use for FTP (inclusive range).
    */
   ObjectStorage(const std::string& address = std::string("0.0.0.0"),
                 uint16_t port = 21, LogLevel log_level = LogLevel::info,
-                bool authenticate = false);
+                bool authenticate = false, PortRange ftp_range = {2000, 3000});
 
   // No use case for copying and moving for now.
   ObjectStorage(ObjectStorage&&) = delete;
@@ -106,6 +109,7 @@ class ObjectStorage : public IServer {
   Acceptor acceptor_;                       ///< TCP connection acceptor
   std::atomic<int> open_connection_count_;  ///< Open TCP connection count
   const bool authenticate_;                 ///< Authenticate users
+  PortRange ftp_port_range_;                ///< Port numbers to use for FTP.
 };
 
 }  // namespace object_storage

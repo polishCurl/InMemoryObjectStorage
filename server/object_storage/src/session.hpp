@@ -21,6 +21,14 @@ using HttpHandler = std::function<void(
 namespace server {
 namespace object_storage {
 
+/**
+ * \brief Range of port ID values.
+ */
+struct PortRange {
+  std::uint16_t min_port;  ///< Minimum port ID in the range.
+  std::uint16_t max_port;  ///< Maximum port ID in the range.
+};
+
 class Session : public std::enable_shared_from_this<Session> {
  public:
   /**
@@ -30,10 +38,11 @@ class Session : public std::enable_shared_from_this<Session> {
    * \param user_database Users recognized by the server.
    * \param authenticate Enable/disable user authentication.
    * \param filesystem Filesystem to manage.
+   * \param ftp_range Client port numbers to use for FTP (inclusive range).
    * \param completion_handler Handler to invoke once this session is destroyed.
    */
   Session(IOService& io_service, const user::UserDatabase& user_database,
-          bool authenticate, fs::MemoryFs& filesystem,
+          bool authenticate, fs::MemoryFs& filesystem, PortRange ftp_range,
           const std::function<void()>& completion_handler);
 
   // Disable copy and move since we are inheriting from shared_from_this
@@ -185,6 +194,9 @@ class Session : public std::enable_shared_from_this<Session> {
 
   /// Currently logged in user.
   std::shared_ptr<user::User> ftp_user_;
+
+  /// Port numbers to use for FTP.
+  PortRange ftp_port_range_;
 
   // ------------------ HTTP ------------------
   /// Mapping from HTTP request method to the corresponding handler function.
