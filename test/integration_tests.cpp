@@ -43,7 +43,7 @@ static constexpr std::uint16_t kMaxHttpClientPortId{51000};
 // static constexpr std::uint16_t kFtpClientPortId{2147};
 
 /// Default log level used for the server.
-static constexpr LogLevel kServerLogLevel{LogLevel::error};
+static constexpr LogLevel kServerLogLevel{LogLevel::Error};
 
 /// Testing parameters: Server thread count and enable/disable user
 /// authentication.
@@ -52,20 +52,22 @@ using TestParams = std::tuple<std::size_t, bool>;
 /**
  * \brief Run 'curl' HTTP command with given parameters.
  *
- * \param uri HTTP/FTP URI.
- * \param method HTTP/FTP method (use uppercase)
- * \param authenticate Use HTTP authentication or FTP login, or not.
+ * \param uri Uniform Resource Identifier.
+ * \param method HTTP method (use uppercase)
+ * \param authenticate Use HTTP authentication, or not.
  * \param filename Local file to use for download/upload.
  * \param host Hostname to use.
  * \param port Port ID to use.
  *
- * \return True, if curl command completed successfully, false otherwise.
+ * \return HTTP status code returned by the server.
+ *
+ * \throw std::runtime_error If curl command fails to execute.
  */
-static bool curl(const std::string& uri, const std::string& method,
-                 bool authenticate = false,
-                 std::string filename = std::string{kOutFileName},
-                 const std::string& host = std::string{kHostname},
-                 std::uint16_t port = kServerPortId)
+static int curl(const std::string& uri, const std::string& method,
+                bool authenticate = false,
+                std::string filename = std::string{kOutFileName},
+                const std::string& host = std::string{kHostname},
+                std::uint16_t port = kServerPortId)
 
 {
   static constexpr std::array<std::string_view, 2> kHttpDownloadMethods{"GET",
@@ -78,6 +80,8 @@ static bool curl(const std::string& uri, const std::string& method,
   command += " http://" + host + ':' + std::to_string(port) + uri;
   command += " -X " + method;
 
+  // If HTTP method is for downloading a file, provide the output file.
+  // Otherwise, if HTTP method is for uploading file, provide the input file.
   if (std::find(kHttpDownloadMethods.begin(), kHttpDownloadMethods.end(),
                 method) != kHttpDownloadMethods.end()) {
     command += " -o " + filename;
@@ -86,18 +90,32 @@ static bool curl(const std::string& uri, const std::string& method,
     command += " -T " + filename;
   }
 
+  // Provide user credentials
   if (authenticate) {
     command += " --user \"" + std::string{kUsername} + ':' +
                std::string{kPassword} + '\"';
   }
 
+  // Provide the port number range to use for HTTP
   command += "  --local-port " + std::to_string(kMinHttpClientPortId) + '-' +
              std::to_string(kMaxHttpClientPortId);
 
-  // command += "-w \"%{http_code}\n\" ";
-  // std::cout << std::ifstream(kStatusFileName).rdbuf();
+  // Make curl output only HTTP status code returned by the server.
+  command += " -w \"%{http_code}\n\" ";
 
-  return std::system(command.c_str()) == 0;
+  // Extract the HTTP status code from curl's stdout.
+  std::array<char, 128> buffer;
+  std::string result;
+  std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(command.c_str(), "r"),
+                                                pclose);
+  if (!pipe) {
+    throw std::runtime_error("curl command failed failed!");
+  }
+  while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
+    result += buffer.data();
+  }
+
+  return std::stoi(result);
 }
 
 /**
@@ -162,13 +180,18 @@ class HttpFixture : public ::testing::TestWithParam<TestParams> {
 
 TEST_P(HttpFixture, StartStop) {}
 
+TEST_P(HttpFixture, UnrecognizedMethod) {
+  ASSERT_EQ(400, curl("/", "HEAD", authenticate_));
+  ASSERT_EQ(0, std::filesystem::file_size(kOutFileName));
+}
+
 TEST_P(HttpFixture, ListEmpty) {
-  ASSERT_TRUE(curl("/", "GET", authenticate_));
+  ASSERT_EQ(200, curl("/", "GET", authenticate_));
   ASSERT_EQ(0, std::filesystem::file_size(kOutFileName));
 }
 
 TEST_P(HttpFixture, RemoveFromEmpty) {
-  ASSERT_TRUE(curl("/does/not/exists.txt", "DELETE", authenticate_));
+  ASSERT_EQ(404, curl("/does/not/exists.txt", "DELETE", authenticate_));
 }
 
 TEST_P(HttpFixture, UploadDownload) {
@@ -176,10 +199,10 @@ TEST_P(HttpFixture, UploadDownload) {
   const std::string uri("/bmw_picture.jpeg");
 
   ASSERT_TRUE(std::filesystem::exists(file_to_upload));
-  ASSERT_TRUE(curl(uri, "PUT", authenticate_, file_to_upload));
-  ASSERT_TRUE(curl("/", "GET", authenticate_));
+  ASSERT_EQ(201, curl(uri, "PUT", authenticate_, file_to_upload));
+  ASSERT_EQ(200, curl("/", "GET", authenticate_));
   ASSERT_EQ(uri.size() + 1, std::filesystem::file_size(kOutFileName));
-  ASSERT_TRUE(curl(uri, "GET", authenticate_));
+  ASSERT_EQ(200, curl(uri, "GET", authenticate_));
   ASSERT_TRUE(compareFiles(file_to_upload, std::string{kOutFileName}));
 }
 
@@ -188,11 +211,11 @@ TEST_P(HttpFixture, UploadRemove) {
   const std::string uri("/ringtones/the_office_theme.mp3");
 
   ASSERT_TRUE(std::filesystem::exists(file_to_upload));
-  ASSERT_TRUE(curl(uri, "PUT", authenticate_, file_to_upload));
-  ASSERT_TRUE(curl("/", "GET", authenticate_));
+  ASSERT_EQ(201, curl(uri, "PUT", authenticate_, file_to_upload));
+  ASSERT_EQ(200, curl("/", "GET", authenticate_));
   ASSERT_EQ(uri.size() + 1, std::filesystem::file_size(kOutFileName));
-  ASSERT_TRUE(curl(uri, "DELETE", authenticate_));
-  ASSERT_TRUE(curl("/", "GET", authenticate_));
+  ASSERT_EQ(200, curl(uri, "DELETE", authenticate_));
+  ASSERT_EQ(200, curl("/", "GET", authenticate_));
   ASSERT_EQ(0, std::filesystem::file_size(kOutFileName));
 }
 
@@ -205,11 +228,11 @@ TEST_P(HttpFixture, MultipleFiles) {
 
   for (const auto& file : files) {
     ASSERT_TRUE(std::filesystem::exists(file));
-    ASSERT_TRUE(curl("/" + file, "PUT", authenticate_, file));
+    ASSERT_EQ(201, curl("/" + file, "PUT", authenticate_, file));
   }
 
   for (const auto& file : files) {
-    ASSERT_TRUE(curl("/" + file, "GET", authenticate_));
+    ASSERT_EQ(200, curl("/" + file, "GET", authenticate_));
     ASSERT_TRUE(compareFiles(file, std::string{kOutFileName}));
   }
 }
