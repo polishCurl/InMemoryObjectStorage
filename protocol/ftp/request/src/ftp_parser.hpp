@@ -24,6 +24,7 @@ enum class FtpCommand {
   Dele,
   User,
   Pass,
+  Pasv,
   Unrecognized,
 };
 

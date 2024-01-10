@@ -81,3 +81,11 @@ TEST(FtpParserTest, Pass) {
   EXPECT_THAT(ftp.getTokens(),
               ::testing::ElementsAreArray({"PASS", "admin4321"}));
 }
+
+TEST(FtpParserTest, Pasv) {
+  std::string ftp_request{"PASV\r\n"};
+  FtpParser ftp{ftp_request};
+  ASSERT_TRUE(ftp.isValid());
+  EXPECT_EQ(ftp.getCommand(), FtpCommand::Pasv);
+  EXPECT_THAT(ftp.getTokens(), ::testing::ElementsAreArray({"PASV"}));
+}

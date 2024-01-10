@@ -28,6 +28,7 @@ const std::unordered_map<std::string, FtpCommand> FtpParser::kCommandMap = {
     {"LIST", FtpCommand::List}, {"RETR", FtpCommand::Retr},
     {"STOR", FtpCommand::Stor}, {"DELE", FtpCommand::Dele},
     {"PASS", FtpCommand::Pass}, {"USER", FtpCommand::User},
+    {"PASV", FtpCommand::Pasv},
 };
 
 }  // namespace request
