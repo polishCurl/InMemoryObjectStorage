@@ -56,6 +56,8 @@ using TestParams = std::tuple<std::size_t, bool>;
  * \param method HTTP method (use uppercase)
  * \param authenticate Use HTTP authentication, or not.
  * \param filename Local file to use for download/upload.
+ * \param username Username to authenticate.
+ * \param password Password to authenticate.
  * \param host Hostname to use.
  * \param port Port ID to use.
  *
@@ -65,7 +67,9 @@ using TestParams = std::tuple<std::size_t, bool>;
  */
 static int curl(const std::string& uri, const std::string& method,
                 bool authenticate = false,
-                std::string filename = std::string{kOutFileName},
+                const std::string& filename = std::string{kOutFileName},
+                const std::string& username = std::string{kUsername},
+                const std::string& password = std::string{kPassword},
                 const std::string& host = std::string{kHostname},
                 std::uint16_t port = kServerPortId)
 
@@ -92,8 +96,7 @@ static int curl(const std::string& uri, const std::string& method,
 
   // Provide user credentials
   if (authenticate) {
-    command += " --user \"" + std::string{kUsername} + ':' +
-               std::string{kPassword} + '\"';
+    command += " --user \"" + username + ':' + password + '\"';
   }
 
   // Provide the port number range to use for HTTP
@@ -195,8 +198,8 @@ TEST_P(HttpFixture, RemoveFromEmpty) {
 }
 
 TEST_P(HttpFixture, UploadDownload) {
-  const std::string file_to_upload("test/data/bmw_picture.jpeg");
-  const std::string uri("/bmw_picture.jpeg");
+  const std::string file_to_upload("test/data/example.json");
+  const std::string uri("/diff_name_th!!_uS**al.jpeg");
 
   ASSERT_TRUE(std::filesystem::exists(file_to_upload));
   ASSERT_EQ(201, curl(uri, "PUT", authenticate_, file_to_upload));
@@ -207,8 +210,8 @@ TEST_P(HttpFixture, UploadDownload) {
 }
 
 TEST_P(HttpFixture, UploadRemove) {
-  const std::string file_to_upload("test/data/the_office_theme.mp3");
-  const std::string uri("/ringtones/the_office_theme.mp3");
+  const std::string file_to_upload("test/data/example.json");
+  const std::string uri("/data/example.json");
 
   ASSERT_TRUE(std::filesystem::exists(file_to_upload));
   ASSERT_EQ(201, curl(uri, "PUT", authenticate_, file_to_upload));
@@ -219,7 +222,39 @@ TEST_P(HttpFixture, UploadRemove) {
   ASSERT_EQ(0, std::filesystem::file_size(kOutFileName));
 }
 
-TEST_P(HttpFixture, MultipleFiles) {
+TEST_P(HttpFixture, UploadTwice) {
+  const std::string file_to_upload("test/data/example.json");
+  const std::string uri("/test/data/example.json");
+
+  ASSERT_TRUE(std::filesystem::exists(file_to_upload));
+  ASSERT_EQ(201, curl(uri, "PUT", authenticate_, file_to_upload));
+  ASSERT_EQ(404, curl(uri, "PUT", authenticate_, file_to_upload));
+  ASSERT_EQ(200, curl("/", "GET", authenticate_));
+  ASSERT_EQ(uri.size() + 1, std::filesystem::file_size(kOutFileName));
+}
+
+TEST_P(HttpFixture, DeleteTwice) {
+  const std::string file_to_upload("test/data/example.json");
+  const std::string uri("/test/data/example.json");
+
+  ASSERT_TRUE(std::filesystem::exists(file_to_upload));
+  ASSERT_EQ(201, curl(uri, "PUT", authenticate_, file_to_upload));
+  ASSERT_EQ(200, curl(uri, "DELETE", authenticate_));
+  ASSERT_EQ(404, curl(uri, "DELETE", authenticate_));
+  ASSERT_EQ(200, curl("/", "GET", authenticate_));
+  ASSERT_EQ(0, std::filesystem::file_size(kOutFileName));
+}
+
+TEST_P(HttpFixture, GetFileNotFound) {
+  const std::string file_to_upload("test/data/example.json");
+  const std::string uri_upload("/test/data/example.json");
+  const std::string uri_download("/example.json");
+  ASSERT_TRUE(std::filesystem::exists(file_to_upload));
+  ASSERT_EQ(201, curl(uri_upload, "PUT", authenticate_, file_to_upload));
+  ASSERT_EQ(404, curl(uri_download, "GET", authenticate_));
+}
+
+TEST_P(HttpFixture, MultipleLargeFiles) {
   std::vector<std::string> files{
       "test/data/the_office_theme.mp3",
       "test/data/bmw_picture.jpeg",
@@ -235,6 +270,25 @@ TEST_P(HttpFixture, MultipleFiles) {
     ASSERT_EQ(200, curl("/" + file, "GET", authenticate_));
     ASSERT_TRUE(compareFiles(file, std::string{kOutFileName}));
   }
+}
+
+TEST_P(HttpFixture, NotAuthorized) {
+  const std::string username{"Lando"};
+  const std::string password{"Norris"};
+  const std::string file("test/data/example.json");
+  const std::string uri("/test/data/example.json");
+  ASSERT_TRUE(std::filesystem::exists(file));
+
+  int http_status = std::get<1>(GetParam()) ? 401 : 200;
+  int http_status_put = std::get<1>(GetParam()) ? 401 : 201;
+  ASSERT_EQ(http_status_put,
+            curl(uri, "PUT", authenticate_, file, username, password));
+  ASSERT_EQ(http_status, curl("/", "GET", authenticate_,
+                              std::string{kOutFileName}, username, password));
+  ASSERT_EQ(http_status, curl(uri, "GET", authenticate_,
+                              std::string{kOutFileName}, username, password));
+  ASSERT_EQ(http_status, curl(uri, "DELETE", authenticate_,
+                              std::string{kOutFileName}, username, password));
 }
 
 /**
