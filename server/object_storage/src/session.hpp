@@ -171,6 +171,13 @@ class Session : public std::enable_shared_from_this<Session> {
   void handleFtpPasv(const protocol::ftp::request::FtpParser& parser);
 
   /**
+   * \brief Handle FTP TYPE command.
+   *
+   * \param parser Parsed FTP request.
+   */
+  void handleFtpType(const protocol::ftp::request::FtpParser& parser);
+
+  /**
    * \brief Set up TCP connection acceptor on FTP data socket.
    *
    * \return True if server is ready to accept connections, false otherwise.

@@ -57,6 +57,8 @@ Session::Session(IOService& io_service, const user::UserDatabase& user_database,
            std::bind(&Session::handleFtpDele, this, std::placeholders::_1)},
           {FtpCommand::Pasv,
            std::bind(&Session::handleFtpPasv, this, std::placeholders::_1)},
+          {FtpCommand::Type,
+           std::bind(&Session::handleFtpType, this, std::placeholders::_1)},
       },
       // ------------------ HTTP ------------------
       http_handlers_{
@@ -268,6 +270,14 @@ void Session::handleFtpPasv(const protocol::ftp::request::FtpParser& parser) {
     stream << ((port >> 8) & 0xff) << "," << (port & 0xff) << ")";
     sendMessage(FtpResponse(FtpReplyCode::ENTERING_PASSIVE_MODE,
                             "Entering passive mode " + stream.str()));
+  }
+}
+
+void Session::handleFtpType(const protocol::ftp::request::FtpParser& parser) {
+  if (!logged_in_user_) {
+    sendMessage(FtpResponse(FtpReplyCode::NOT_LOGGED_IN, "Not logged in"));
+  } else {
+    sendMessage(FtpResponse(FtpReplyCode::COMMAND_OK, "Mode switched"));
   }
 }
 
