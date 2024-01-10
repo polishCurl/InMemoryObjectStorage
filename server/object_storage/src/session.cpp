@@ -203,6 +203,58 @@ void Session::closeFtpDataSocket() noexcept {
   }
 }
 
+void Session::sendFtpDataHandler(
+    const std::shared_ptr<Socket>& data_socket) noexcept {
+  ftp_data_serializer_.post([me = shared_from_this(), data_socket]() {
+    // Get the next file from FTP data socket send queue.
+    const auto data = me->ftp_data_buffer_.front();
+
+    if (data) {
+      // If the file is non-empty, send if over FTP data socket and retrigger
+      // this handler so that the next file can be sent.
+      boost::asio::async_write(
+          *data_socket, boost::asio::buffer(*data),
+          me->ftp_data_serializer_.wrap(
+              [me, data, data_socket](ErrorCode error_code, std::size_t) {
+                me->ftp_data_buffer_.pop_front();
+
+                if (error_code) {
+                  BOOST_LOG_TRIVIAL(error)
+                      << "Failed to write data: " << error_code.message();
+                  return;
+                }
+
+                if (!me->ftp_data_buffer_.empty()) {
+                  me->sendFtpDataHandler(data_socket);
+                }
+              }));
+    } else {
+      // If the file to send is empty, this means transmission end.
+      // Close the FTP data socket.
+      me->ftp_data_buffer_.pop_front();
+      ErrorCode error_code;
+      data_socket->shutdown(Socket::shutdown_both, error_code);
+      data_socket->close(error_code);
+
+      me->sendMessage(
+          FtpResponse(FtpReplyCode::CLOSING_DATA_CONNECTION, "Done"));
+    }
+  });
+}
+
+void Session::enqueueFtpDataHandler(
+    const std::shared_ptr<fs::File>& data,
+    const std::shared_ptr<Socket>& data_socket) noexcept {
+  ftp_data_serializer_.post([me = shared_from_this(), data, data_socket]() {
+    //
+    const auto write_in_progress = (!me->ftp_data_buffer_.empty());
+    me->ftp_data_buffer_.push_back(data);
+    if (!write_in_progress) {
+      me->sendFtpDataHandler(data_socket);
+    }
+  });
+}
+
 void Session::handleFtpRequest(const std::string& request) noexcept {
   // If request is valid, delegate it to the right handler based on the FTP
   // command.
@@ -217,6 +269,7 @@ void Session::handleFtpRequest(const std::string& request) noexcept {
 }
 
 void Session::handleFtpUser(const protocol::ftp::request::FtpParser& parser) {
+  // Store the username until the PASS command is received.
   logged_in_user_.reset();
   last_username_ = parser.getTokens()[1];
   sendMessage(
@@ -228,6 +281,7 @@ void Session::handleFtpPass(const protocol::ftp::request::FtpParser& parser) {
     sendMessage(FtpResponse(FtpReplyCode::COMMANDS_BAD_SEQUENCE,
                             "Please specify username first"));
   } else {
+    // Store the username until the PASS command is received.
     const User user{last_username_, std::string{parser.getTokens()[1]}};
     if (user_database_.exists(user)) {
       logged_in_user_ = user;
@@ -239,13 +293,64 @@ void Session::handleFtpPass(const protocol::ftp::request::FtpParser& parser) {
   }
 }
 
-void Session::handleFtpList(const protocol::ftp::request::FtpParser& parser) {}
+void Session::handleFtpList(const protocol::ftp::request::FtpParser& parser) {
+  if (!logged_in_user_) {
+    sendMessage(FtpResponse(FtpReplyCode::NOT_LOGGED_IN, "Not logged in"));
+  }
+
+  sendMessage(FtpResponse(FtpReplyCode::FILE_STATUS_OK_OPENING_DATA_CONNECTION,
+                          "Listing all objects stored"));
+
+  // Serialize the file list into a single text file.
+  const auto filenames = filesystem_.list();
+  auto list_file = std::make_shared<fs::File>();
+  for (const auto& filename : filenames) {
+    *list_file += filename + '\n';
+  }
+
+  // Asynchronous put the file into the FTP data send queue.
+  auto data_socket = std::make_shared<Socket>(io_service_);
+  ftp_data_acceptor_.async_accept(
+      *data_socket,
+      ftp_data_serializer_.wrap(
+          [data_socket, list_file, me = shared_from_this()](auto error_code) {
+            if (error_code) {
+              me->sendMessage(FtpResponse(
+                  FtpReplyCode::TRANSFER_ABORTED,
+                  "Data transfer aborted: " + error_code.message()));
+              return;
+            }
+
+            me->ftp_data_socket_ = data_socket;
+            me->enqueueFtpDataHandler(list_file, data_socket);
+            me->enqueueFtpDataHandler({}, data_socket);
+          }));
+}
 
 void Session::handleFtpRetr(const protocol::ftp::request::FtpParser& parser) {}
 
 void Session::handleFtpStor(const protocol::ftp::request::FtpParser& parser) {}
 
-void Session::handleFtpDele(const protocol::ftp::request::FtpParser& parser) {}
+void Session::handleFtpDele(const protocol::ftp::request::FtpParser& parser) {
+  if (!logged_in_user_) {
+    sendMessage(FtpResponse(FtpReplyCode::NOT_LOGGED_IN, "Not logged in"));
+  }
+
+  const auto& filename = std::string{parser.getTokens()[1]};
+  const auto status = filesystem_.remove(filename);
+  switch (status) {
+    case fs::Status::Success:
+      BOOST_LOG_TRIVIAL(info) << "Deleted file: " << filename;
+      sendMessage(
+          FtpResponse(FtpReplyCode::FILE_ACTION_COMPLETED, "File deleted"));
+      break;
+    default:
+      sendMessage(
+          FtpResponse(FtpReplyCode::ACTION_NOT_TAKEN, "Unable to delete file"));
+
+      break;
+  }
+}
 
 void Session::handleFtpPasv(const protocol::ftp::request::FtpParser& parser) {
   if (!logged_in_user_) {
@@ -254,7 +359,7 @@ void Session::handleFtpPasv(const protocol::ftp::request::FtpParser& parser) {
 
   else if (!setUpFtpDataConnectionAcceptor()) {
     sendMessage(FtpResponse(FtpReplyCode::SERVICE_NOT_AVAILABLE,
-                            "Failed to enter passive mode"));
+                            "Passive mode not supported"));
   }
 
   else {
@@ -367,9 +472,9 @@ bool Session::authenticateHttpUser(const HttpParser& parser) noexcept {
 void Session::handleHttpGet(const HttpParser& parser) {
   if (parser.getUri() == "/") {
     // If request has 'GET /' format, list all files stored in the filesystem.
-    const auto file_list = filesystem_.list();
+    const auto filenames = filesystem_.list();
     std::string response;
-    for (const auto& file : file_list) {
+    for (const auto& file : filenames) {
       response += file + '\n';
     }
     sendMessage(HttpResponse{HttpStatus::Ok, response});

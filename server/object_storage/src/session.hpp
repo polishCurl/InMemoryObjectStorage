@@ -115,6 +115,27 @@ class Session : public std::enable_shared_from_this<Session> {
   void closeFtpDataSocket() noexcept;
 
   /**
+   * \brief Handler for sending FTP data.
+   *
+   * \note This method is asynchronous.
+   *
+   * \param data_socket Socket on which to send.
+   */
+  void sendFtpDataHandler(const std::shared_ptr<Socket>& data_socket) noexcept;
+
+  /**
+   * \brief Handler for enqueueing data to FTP-send buffer.
+   *
+   * \note This method is asynchronous.
+   *
+   * \param file File to send.
+   * \param data_socket Socket on which the data will be sent.
+   */
+  void enqueueFtpDataHandler(
+      const std::shared_ptr<fs::File>& data,
+      const std::shared_ptr<Socket>& data_socket) noexcept;
+
+  /**
    * \brief Handle FTP request.
    *
    * \param request Request to handle.
@@ -198,8 +219,8 @@ class Session : public std::enable_shared_from_this<Session> {
    * Use HTTP basic authentication to check if user with given username and
    * password can access the server.
    *
-   * \note There is only a single HTTP realm defined. User has either R/W access
-   * to all server resources or no access at all.
+   * \note There is only a single HTTP realm defined. User has either R/W
+   * access to all server resources or no access at all.
    *
    * \param parser Parsed HTTP request.
    *
