@@ -24,7 +24,7 @@ FTP:
 - Upload files: `STOR /{key}`
 - Remove files: `DELETE /{key}`
 - Support for passive mode (only)
-- FTP login (optional)
+- FTP login (optional): `USER <username>` and `PASS <password>`
 
 HTTP:
 - List all stored files: `GET /`
