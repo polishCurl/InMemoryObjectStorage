@@ -26,7 +26,7 @@ using Socket = boost::asio::ip::tcp::socket;
 /**
  * \brief Object storage server logging level.
  */
-enum class LogLevel : int { trace = 0, debug, info, warning, error, fatal };
+enum class LogLevel : int { Trace = 0, Debug, Info, Warning, Error, Eatal };
 
 /**
  * \brief Object storage server implementation.
@@ -53,7 +53,7 @@ class ObjectStorage : public IServer {
    * \param ftp_range Client port numbers to use for FTP (inclusive range).
    */
   ObjectStorage(const std::string& address = std::string("0.0.0.0"),
-                uint16_t port = 21, LogLevel log_level = LogLevel::info,
+                uint16_t port = 21, LogLevel log_level = LogLevel::Info,
                 bool authenticate = false, PortRange ftp_range = {2000, 3000});
 
   // No use case for copying and moving for now.

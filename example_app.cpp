@@ -12,8 +12,8 @@
 using namespace server::object_storage;
 
 int main(int argc, char *argv[]) {
-  // ObjectStorage server{"127.0.0.1", 1670, LogLevel::debug};
-  ObjectStorage server{"127.0.0.1", 1670, LogLevel::debug, true};
+  // ObjectStorage server{"127.0.0.1", 1670, LogLevel::Debug};
+  ObjectStorage server{"127.0.0.1", 1670, LogLevel::Debug, true};
   server.addUser("Nord", "VPN");
 
   if (!server.start()) {

@@ -38,3 +38,8 @@ TEST(ObjectStorageTest, StartZeroThreads) {
   ObjectStorage server{};
   EXPECT_FALSE(server.start(0));
 }
+
+TEST(ObjectStorageTest, InvalidFtpPortRange) {
+  ObjectStorage server{"127.0.0.1", 80, LogLevel::Trace, true, {3000, 2000}};
+  EXPECT_FALSE(server.start(1));
+}
