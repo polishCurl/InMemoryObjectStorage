@@ -1,6 +1,8 @@
 cc_library(
     name = "object_storage",
     srcs = [
+        "src/ftp_command_handlers.cpp",
+        "src/http_method_handlers.cpp",
         "src/object_storage.cpp",
         "src/session.cpp",
     ],

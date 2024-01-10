@@ -15,11 +15,7 @@ using protocol::ftp::request::FtpParser;
 using protocol::ftp::response::FtpReplyCode;
 using protocol::ftp::response::FtpResponse;
 using protocol::http::request::HttpMethod;
-using protocol::http::request::HttpParser;
-using protocol::http::response::HttpResource;
-using protocol::http::response::HttpResponse;
-using protocol::http::response::HttpResponseHeaders;
-using protocol::http::response::HttpStatus;
+
 using user::User;
 
 namespace server {
@@ -257,238 +253,75 @@ void Session::enqueueFtpDataHandler(
 }
 
 void Session::receiveFtpDataHandler(
-    const std::shared_ptr<fs::File>& file) noexcept {
+    const std::shared_ptr<fs::File>& file,
+    const std::shared_ptr<std::string>& filepath) noexcept {
   auto data_socket = std::make_shared<Socket>(io_service_);
 
   ftp_data_acceptor_.async_accept(
       *data_socket,
-      ftp_data_serializer_.wrap(
-          [data_socket, file, me = shared_from_this()](auto error_code) {
-            if (error_code) {
-              me->sendMessage(FtpResponse(
-                  FtpReplyCode::TRANSFER_ABORTED,
-                  "Data transfer aborted: " + error_code.message()));
-              return;
-            }
+      ftp_data_serializer_.wrap([data_socket, file, filepath,
+                                 me = shared_from_this()](auto error_code) {
+        if (error_code) {
+          me->sendMessage(
+              FtpResponse(FtpReplyCode::TRANSFER_ABORTED,
+                          "Data transfer aborted: " + error_code.message()));
+          return;
+        }
 
-            me->ftp_data_socket_ = data_socket;
-            me->saveFtpDataHandler(file, data_socket);
-          }));
+        me->ftp_data_socket_ = data_socket;
+        me->saveFtpDataHandler(file, filepath, data_socket);
+      }));
 }
 
 void Session::saveFtpDataHandler(
     const std::shared_ptr<fs::File>& file,
+    const std::shared_ptr<std::string>& filepath,
     const std::shared_ptr<Socket>& data_socket) noexcept {
-  const auto buffer = std::make_shared<fs::File>();
-
+  auto buffer = std::make_shared<fs::File>();
   buffer->resize(1024 * 1024 * 1);
 
   boost::asio::async_read(
       *data_socket, boost::asio::buffer(*buffer),
       boost::asio::transfer_at_least(buffer->size()),
       ftp_data_serializer_.wrap(
-          [me = shared_from_this(), file, data_socket, buffer](
+          [me = shared_from_this(), file, filepath, data_socket, buffer](
               ErrorCode error_code, std::size_t length) {
             buffer->resize(length);
             if (error_code) {
               if (length > 0) {
-                me->writeDataToFile(buffer, file);
+                file->append(*buffer);
               }
-              me->endDataReceiving(file, data_socket);
-              return;
+              me->sendMessage(FtpResponse(FtpReplyCode::CLOSING_DATA_CONNECTION,
+                                          "File saved"));
+              me->endDataReceiving(file, filepath, data_socket);
             } else if (length > 0) {
-              me->writeDataToFile(buffer, file, [me, file, data_socket]() {
-                me->receiveDataFromSocketAndWriteToFile(file, data_socket);
-              });
+              me->saveFtpDataHandler(file, filepath, data_socket);
+              file->append(*buffer);
             }
           }));
 }
 
-void Session::handleFtpRequest(const std::string& request) noexcept {
-  // If request is valid, delegate it to the right handler based on the FTP
-  // command.
-  FtpParser parser{request};
-  if (parser.isValid()) {
-    const auto ftp_command = parser.getCommand();
-    ftp_handlers_.at(ftp_command)(parser);
-    last_ftp_command_ = ftp_command;
-  } else {
-    sendMessage(FtpResponse(FtpReplyCode::SYNTAX_ERROR_UNRECOGNIZED_COMMAND));
-  }
-}
-
-void Session::handleFtpUser(const protocol::ftp::request::FtpParser& parser) {
-  // Store the username until the PASS command is received.
-  logged_in_user_.reset();
-  last_username_ = parser.getTokens()[1];
-  sendMessage(
-      FtpResponse(FtpReplyCode::USER_NAME_OK, "Please provide password"));
-}
-
-void Session::handleFtpPass(const protocol::ftp::request::FtpParser& parser) {
-  if (last_ftp_command_ != FtpCommand::User) {
-    sendMessage(FtpResponse(FtpReplyCode::COMMANDS_BAD_SEQUENCE,
-                            "Please specify username first"));
-  } else {
-    // Store the username until the PASS command is received.
-    const User user{last_username_, std::string{parser.getTokens()[1]}};
-    if (user_database_.exists(user)) {
-      logged_in_user_ = user;
-      sendMessage(
-          FtpResponse(FtpReplyCode::USER_LOGGED_IN, "Login successful"));
-    } else {
-      sendMessage(FtpResponse(FtpReplyCode::NOT_LOGGED_IN, "Failed to log in"));
+void Session::endDataReceiving(
+    const std::shared_ptr<fs::File>& file,
+    const std::shared_ptr<std::string>& filepath,
+    const std::shared_ptr<Socket>& data_socket) noexcept {
+  ftp_data_serializer_.post([me = shared_from_this(), file, filepath,
+                             data_socket]() {
+    const auto status = me->filesystem_.add(*filepath, *file);
+    switch (status) {
+      case fs::Status::Success:
+        BOOST_LOG_TRIVIAL(info) << "Saved file: " << filepath;
+        me->sendMessage(
+            FtpResponse(FtpReplyCode::FILE_ACTION_ABORTED, "File not saved"));
+        break;
+      default:
+        me->sendMessage(
+            FtpResponse(FtpReplyCode::CLOSING_DATA_CONNECTION, "File saved"));
+        break;
     }
-  }
-}
 
-void Session::handleFtpList(const protocol::ftp::request::FtpParser& parser) {
-  if (!logged_in_user_) {
-    sendMessage(FtpResponse(FtpReplyCode::NOT_LOGGED_IN, "Not logged in"));
-    return;
-  }
-
-  sendMessage(FtpResponse(FtpReplyCode::FILE_STATUS_OK_OPENING_DATA_CONNECTION,
-                          "Listing all objects stored"));
-
-  // Serialize the file list into a single text file.
-  const auto filepaths = filesystem_.list();
-  auto file = std::make_shared<fs::File>();
-  for (const auto& filepath : filepaths) {
-    *file += filepath + '\n';
-  }
-
-  // Asynchronous put the file into the FTP data send queue.
-  auto data_socket = std::make_shared<Socket>(io_service_);
-  ftp_data_acceptor_.async_accept(
-      *data_socket,
-      ftp_data_serializer_.wrap(
-          [data_socket, file, me = shared_from_this()](auto error_code) {
-            if (error_code) {
-              me->sendMessage(FtpResponse(
-                  FtpReplyCode::TRANSFER_ABORTED,
-                  "Data transfer aborted: " + error_code.message()));
-              return;
-            }
-
-            me->ftp_data_socket_ = data_socket;
-            me->enqueueFtpDataHandler(file, data_socket);
-            me->enqueueFtpDataHandler({}, data_socket);
-          }));
-}
-
-void Session::handleFtpRetr(const protocol::ftp::request::FtpParser& parser) {
-  if (!logged_in_user_) {
-    sendMessage(FtpResponse(FtpReplyCode::NOT_LOGGED_IN, "Not logged in"));
-    return;
-  }
-
-  if (!ftp_data_acceptor_.is_open()) {
-    sendMessage(FtpResponse(FtpReplyCode::ERROR_OPENING_DATA_CONNECTION,
-                            "Error opening data connection"));
-    return;
-  }
-
-  const std::string filepath{parser.getTokens()[1]};
-  // Otherwise, get the file from the filesystem and send it in response (if
-  // it was found).
-  const auto [status, file] = filesystem_.get(filepath);
-  switch (status) {
-    case fs::Status::Success:
-      sendMessage(
-          FtpResponse(FtpReplyCode::FILE_STATUS_OK_OPENING_DATA_CONNECTION,
-                      "Sending file"));
-      break;
-    default:
-      sendMessage(FtpResponse(FtpReplyCode::ACTION_ABORTED_LOCAL_ERROR,
-                              "Error opening file for transfer"));
-      break;
-  }
-  /*
-  if (!file) {
-    sendFtpMessage(FtpReplyCode::ACTION_ABORTED_LOCAL_ERROR,
-                   "Error opening file for transfer");
-    return;
-  }
-
-  sendFtpMessage(FtpReplyCode::FILE_STATUS_OK_OPENING_DATA_CONNECTION,
-                 "Sending file");
-  sendFile(file);
-  */
-}
-
-void Session::handleFtpStor(const protocol::ftp::request::FtpParser& parser) {
-  if (!logged_in_user_) {
-    sendMessage(FtpResponse(FtpReplyCode::NOT_LOGGED_IN, "Not logged in"));
-    return;
-  }
-
-  if (!ftp_data_acceptor_.is_open()) {
-    sendMessage(FtpResponse(FtpReplyCode::ERROR_OPENING_DATA_CONNECTION,
-                            "Error opening data connection"));
-    return;
-  }
-
-  const auto& filepath = std::string{parser.getTokens()[1]};
-
-  sendMessage(FtpResponse{FtpReplyCode::FILE_STATUS_OK_OPENING_DATA_CONNECTION,
-                          "Ready to receive"});
-  receiveFile(file);
-}
-
-void Session::handleFtpDele(const protocol::ftp::request::FtpParser& parser) {
-  if (!logged_in_user_) {
-    sendMessage(FtpResponse(FtpReplyCode::NOT_LOGGED_IN, "Not logged in"));
-    return;
-  }
-
-  const auto& filepath = std::string{parser.getTokens()[1]};
-  const auto status = filesystem_.remove(filepath);
-  switch (status) {
-    case fs::Status::Success:
-      BOOST_LOG_TRIVIAL(info) << "Deleted file: " << filepath;
-      sendMessage(
-          FtpResponse(FtpReplyCode::FILE_ACTION_COMPLETED, "File deleted"));
-      break;
-    default:
-      sendMessage(
-          FtpResponse(FtpReplyCode::ACTION_NOT_TAKEN, "Unable to delete file"));
-
-      break;
-  }
-}
-
-void Session::handleFtpPasv(const protocol::ftp::request::FtpParser& parser) {
-  if (!logged_in_user_) {
-    sendMessage(FtpResponse(FtpReplyCode::NOT_LOGGED_IN, "Not logged in"));
-    return;
-  }
-
-  if (!setUpFtpDataConnectionAcceptor()) {
-    sendMessage(FtpResponse(FtpReplyCode::SERVICE_NOT_AVAILABLE,
-                            "Passive mode not supported"));
-  } else {
-    // Respond to FTP client with IP address and port for data connection.
-    const auto ip_bytes = socket_.local_endpoint().address().to_v4().to_bytes();
-    const auto port = ftp_data_acceptor_.local_endpoint().port();
-
-    std::stringstream stream;
-    stream << "(";
-    for (const auto byte : ip_bytes) {
-      stream << static_cast<unsigned int>(byte) << ",";
-    }
-    stream << ((port >> 8) & 0xff) << "," << (port & 0xff) << ")";
-    sendMessage(FtpResponse(FtpReplyCode::ENTERING_PASSIVE_MODE,
-                            "Entering passive mode " + stream.str()));
-  }
-}
-
-void Session::handleFtpType(const protocol::ftp::request::FtpParser& parser) {
-  if (!logged_in_user_) {
-    sendMessage(FtpResponse(FtpReplyCode::NOT_LOGGED_IN, "Not logged in"));
-  } else {
-    sendMessage(FtpResponse(FtpReplyCode::COMMAND_OK, "Mode switched"));
-  }
+    me->closeFtpDataSocket();
+  });
 }
 
 bool Session::setUpFtpDataConnectionAcceptor() noexcept {
@@ -527,131 +360,6 @@ bool Session::setUpFtpDataConnectionAcceptor() noexcept {
   }
 
   return true;
-}
-
-void Session::handleHttpRequest(std::string& request) noexcept {
-  auto status_line_size = request.size();
-
-  // Read the rest of the HTTP request (excluding message body)
-  auto response_headers_size =
-      boost::asio::read_until(socket_, input_stream_, "\r\n\r\n");
-  std::istream stream(&input_stream_);
-  request.resize(request.size() + response_headers_size);
-  stream.read(&request[status_line_size], response_headers_size);
-
-  BOOST_LOG_TRIVIAL(debug) << "HTTP request:\n" << request;
-
-  // If request is valid, delegate it to the right handler based on the HTTP
-  // method.
-  HttpParser parser{request};
-  if (!parser.isValid()) {
-    BOOST_LOG_TRIVIAL(error) << "Failed to parse HTTP request:\n" << request;
-    sendMessage(HttpResponse{HttpStatus::BadRequest});
-
-  } else if (!authenticateHttpUser(parser)) {
-    sendMessage(HttpResponse{HttpStatus::Unauthorized,
-                             HttpResponseHeaders{{"WWW-Authenticate", "Basic"},
-                                                 {"Content-Length", "0"}}});
-  } else {
-    http_handlers_.at(parser.getMethod())(parser);
-  }
-}
-
-bool Session::authenticateHttpUser(const HttpParser& parser) noexcept {
-  if (authenticate_) {
-    const auto auth_info = parser.getAuthInfo();
-    user::User user_to_auth{auth_info->username, auth_info->password};
-    const auto user_exists = user_database_.exists(user_to_auth);
-
-    if (!user_exists) {
-      BOOST_LOG_TRIVIAL(error)
-          << "Failed to authenticate user " << user_to_auth;
-    }
-
-    return user_exists;
-  }
-
-  return true;
-}
-
-void Session::handleHttpGet(const HttpParser& parser) {
-  if (parser.getUri() == "/") {
-    // If request has 'GET /' format, list all files stored in the filesystem.
-    const auto filepaths = filesystem_.list();
-    std::string response;
-    for (const auto& filepath : filepaths) {
-      response += filepath + '\n';
-    }
-    sendMessage(HttpResponse{HttpStatus::Ok, response});
-
-  } else {
-    // Otherwise, get the file from the filesystem and send it in response (if
-    // it was found).
-    const auto [status, file] = filesystem_.get(std::string{parser.getUri()});
-    switch (status) {
-      case fs::Status::Success:
-        sendMessage(HttpResponse{HttpStatus::Ok, file});
-        break;
-      case fs::Status::FileNotFound:
-        sendMessage(HttpResponse{HttpStatus::NotFound});
-        break;
-      default:
-        sendMessage(HttpResponse{HttpStatus::InternalServerError});
-        break;
-    }
-  }
-}
-
-void Session::handleHttpPut(const HttpParser& parser) {
-  ErrorCode error_code;
-  const auto file_size = parser.getResourceSize();
-  const auto filepath = std::string{parser.getUri()};
-
-  // Read the HTTP message body containing the content/resource/file.
-  auto bytes_read =
-      boost::asio::read(socket_, input_stream_,
-                        boost::asio::transfer_exactly(file_size), error_code);
-
-  if (bytes_read != file_size) {
-    BOOST_LOG_TRIVIAL(error) << "Failed to read " << file_size
-                             << " bytes (Actual: " << bytes_read << ')';
-    sendMessage(HttpResponse{HttpStatus::BadRequest});
-  } else {
-    auto bufs = input_stream_.data();
-    fs::File file(boost::asio::buffers_begin(bufs),
-                  boost::asio::buffers_begin(bufs) + file_size);
-
-    const auto status = filesystem_.add(std::string{filepath}, file);
-    switch (status) {
-      case fs::Status::Success:
-        BOOST_LOG_TRIVIAL(info) << "Saved file: " << filepath;
-        sendMessage(HttpResponse{HttpStatus::Created});
-        break;
-      case fs::Status::AlreadyExists:
-        sendMessage(HttpResponse{HttpStatus::NotFound});
-        break;
-      default:
-        sendMessage(HttpResponse{HttpStatus::InternalServerError});
-        break;
-    }
-  }
-}
-
-void Session::handleHttpDelete(const HttpParser& parser) {
-  const auto& filepath = std::string{parser.getUri()};
-  const auto status = filesystem_.remove(filepath);
-  switch (status) {
-    case fs::Status::Success:
-      BOOST_LOG_TRIVIAL(info) << "Deleted file: " << filepath;
-      sendMessage(HttpResponse{HttpStatus::Ok});
-      break;
-    case fs::Status::FileNotFound:
-      sendMessage(HttpResponse{HttpStatus::NotFound});
-      break;
-    default:
-      sendMessage(HttpResponse{HttpStatus::InternalServerError});
-      break;
-  }
 }
 
 }  // namespace object_storage
