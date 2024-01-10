@@ -142,7 +142,9 @@ class Session : public std::enable_shared_from_this<Session> {
    *
    * \param filepath Path where the received file will be saved.
    */
-  void receiveFtpDataHandler(const std::shared_ptr<fs::File>& file) noexcept;
+  void receiveFtpDataHandler(
+      const std::shared_ptr<fs::File>& file,
+      const std::shared_ptr<std::string>& filepath) noexcept;
 
   /**
    * \brief Handler for saving FTP data filesystem.
@@ -153,12 +155,13 @@ class Session : public std::enable_shared_from_this<Session> {
    * \param data_socket Socket on which the data will be received.
    */
   void saveFtpDataHandler(const std::shared_ptr<fs::File>& file,
+                          const std::shared_ptr<std::string>& filepath,
                           const std::shared_ptr<Socket>& data_socket) noexcept;
 
-  void writeDataToFile(
-      const std::shared_ptr<std::vector<char>>& data,
-      const std::shared_ptr<WriteableFile>& file,
-      const std::function<void(void)>& fetch_more = []() { return; });
+  void endDataReceiving(const std::shared_ptr<fs::File>& file,
+                        const std::shared_ptr<std::string>& filepath,
+                        const std::shared_ptr<Socket>& data_socket) noexcept;
+
   /**
    * \brief Handle FTP request.
    *
