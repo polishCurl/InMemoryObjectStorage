@@ -36,7 +36,7 @@ bool ObjectStorage::start(std::size_t thread_count) {
     return false;
   }
 
-  if (!setUpSessionAcceptor()) {
+  if (!setUpConnectionAcceptor()) {
     return false;
   }
 
@@ -79,7 +79,7 @@ bool ObjectStorage::addUser(const std::string& username,
   return user_added;
 }
 
-bool ObjectStorage::setUpSessionAcceptor() noexcept {
+bool ObjectStorage::setUpConnectionAcceptor() noexcept {
   ErrorCode error_code{};
   const Endpoint endpoint{boost::asio::ip::make_address(address_, error_code),
                           port_};

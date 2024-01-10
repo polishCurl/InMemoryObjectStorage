@@ -10,6 +10,7 @@
 using ErrorCode = boost::system::error_code;
 using protocol::detector::AppLayerProtocol;
 using protocol::detector::detectProtocol;
+using protocol::ftp::request::FtpCommand;
 using protocol::ftp::request::FtpParser;
 using protocol::ftp::response::FtpReplyCode;
 using protocol::ftp::response::FtpResponse;
@@ -40,6 +41,24 @@ Session::Session(IOService& io_service, const user::UserDatabase& user_database,
       ftp_data_acceptor_{io_service},
       ftp_data_serializer_{io_service},
       ftp_port_range_{ftp_port_range},
+      last_ftp_command_{FtpCommand::Unrecognized},
+      ftp_handlers_{
+          {FtpCommand::User,
+           std::bind(&Session::handleFtpUser, this, std::placeholders::_1)},
+          {FtpCommand::Pass,
+           std::bind(&Session::handleFtpPass, this, std::placeholders::_1)},
+          {FtpCommand::List,
+           std::bind(&Session::handleFtpList, this, std::placeholders::_1)},
+          {FtpCommand::Retr,
+           std::bind(&Session::handleFtpRetr, this, std::placeholders::_1)},
+          {FtpCommand::Stor,
+           std::bind(&Session::handleFtpStor, this, std::placeholders::_1)},
+          {FtpCommand::Dele,
+           std::bind(&Session::handleFtpDele, this, std::placeholders::_1)},
+          {FtpCommand::Pasv,
+           std::bind(&Session::handleFtpPasv, this, std::placeholders::_1)},
+      },
+      // ------------------ HTTP ------------------
       http_handlers_{
           {HttpMethod::Get,
            std::bind(&Session::handleHttpGet, this, std::placeholders::_1)},
@@ -66,7 +85,8 @@ void Session::start() noexcept {
   const auto client_port = socket_.remote_endpoint().port();
   if ((client_port >= ftp_port_range_.min_port) &&
       (client_port <= ftp_port_range_.max_port))
-    sendMessage(FtpResponse(FtpReplyCode::SERVICE_READY_FOR_NEW_USER));
+    sendMessage(FtpResponse(FtpReplyCode::SERVICE_READY_FOR_NEW_USER,
+                            "Welcome to ObjectStorage server"));
 }
 
 void Session::setTcpNoDelay() noexcept {
@@ -116,7 +136,7 @@ void Session::receiveMessageHandler() noexcept {
           std::string packet;
           packet.resize(header_length);
           stream.read(&packet[0], header_length);
-          BOOST_LOG_TRIVIAL(debug) << "PACKET:\n" << packet;
+          BOOST_LOG_TRIVIAL(debug) << "Received message:\n" << packet;
           const auto app_layer_protocol = detectProtocol(packet);
 
           switch (app_layer_protocol) {
@@ -182,7 +202,111 @@ void Session::closeFtpDataSocket() noexcept {
 }
 
 void Session::handleFtpRequest(const std::string& request) noexcept {
-  BOOST_LOG_TRIVIAL(debug) << "FTP request:\n" << request;
+  // If request is valid, delegate it to the right handler based on the FTP
+  // command.
+  FtpParser parser{request};
+  if (parser.isValid()) {
+    const auto ftp_command = parser.getCommand();
+    ftp_handlers_.at(ftp_command)(parser);
+    last_ftp_command_ = ftp_command;
+  } else {
+    sendMessage(FtpResponse(FtpReplyCode::SYNTAX_ERROR_UNRECOGNIZED_COMMAND));
+  }
+}
+
+void Session::handleFtpUser(const protocol::ftp::request::FtpParser& parser) {
+  logged_in_user_.reset();
+  last_username_ = parser.getTokens()[1];
+  sendMessage(
+      FtpResponse(FtpReplyCode::USER_NAME_OK, "Please provide password"));
+}
+
+void Session::handleFtpPass(const protocol::ftp::request::FtpParser& parser) {
+  if (last_ftp_command_ != FtpCommand::User) {
+    sendMessage(FtpResponse(FtpReplyCode::COMMANDS_BAD_SEQUENCE,
+                            "Please specify username first"));
+  } else {
+    const User user{last_username_, std::string{parser.getTokens()[1]}};
+    if (user_database_.exists(user)) {
+      logged_in_user_ = user;
+      sendMessage(
+          FtpResponse(FtpReplyCode::USER_LOGGED_IN, "Login successful"));
+    } else {
+      sendMessage(FtpResponse(FtpReplyCode::NOT_LOGGED_IN, "Failed to log in"));
+    }
+  }
+}
+
+void Session::handleFtpList(const protocol::ftp::request::FtpParser& parser) {}
+
+void Session::handleFtpRetr(const protocol::ftp::request::FtpParser& parser) {}
+
+void Session::handleFtpStor(const protocol::ftp::request::FtpParser& parser) {}
+
+void Session::handleFtpDele(const protocol::ftp::request::FtpParser& parser) {}
+
+void Session::handleFtpPasv(const protocol::ftp::request::FtpParser& parser) {
+  if (!logged_in_user_) {
+    sendMessage(FtpResponse(FtpReplyCode::NOT_LOGGED_IN, "Not logged in"));
+  }
+
+  else if (!setUpFtpDataConnectionAcceptor()) {
+    sendMessage(FtpResponse(FtpReplyCode::SERVICE_NOT_AVAILABLE,
+                            "Failed to enter passive mode"));
+  }
+
+  else {
+    // Respond to FTP client with IP address and port for data connection.
+    const auto ip_bytes = socket_.local_endpoint().address().to_v4().to_bytes();
+    const auto port = ftp_data_acceptor_.local_endpoint().port();
+
+    std::stringstream stream;
+    stream << "(";
+    for (const auto byte : ip_bytes) {
+      stream << static_cast<unsigned int>(byte) << ",";
+    }
+    stream << ((port >> 8) & 0xff) << "," << (port & 0xff) << ")";
+    sendMessage(FtpResponse(FtpReplyCode::ENTERING_PASSIVE_MODE,
+                            "Entering passive mode " + stream.str()));
+  }
+}
+
+bool Session::setUpFtpDataConnectionAcceptor() noexcept {
+  ErrorCode error_code;
+  if (ftp_data_acceptor_.is_open()) {
+    ftp_data_acceptor_.close(error_code);
+    if (error_code) {
+      BOOST_LOG_TRIVIAL(error)
+          << "Error closing data acceptor: " << error_code.message();
+    }
+  }
+
+  const Endpoint endpoint{boost::asio::ip::tcp::v4(), 0};
+
+  ftp_data_acceptor_.open(endpoint.protocol(), error_code);
+  if (error_code) {
+    BOOST_LOG_TRIVIAL(error)
+        << "Failed to open FTP data acceptor: " << error_code.message();
+
+    return false;
+  }
+
+  ftp_data_acceptor_.bind(endpoint, error_code);
+  if (error_code) {
+    BOOST_LOG_TRIVIAL(error)
+        << "Failed to bind FTP data acceptor: " << error_code.message();
+    return false;
+  }
+
+  ftp_data_acceptor_.listen(boost::asio::socket_base::max_connections,
+                            error_code);
+  if (error_code) {
+    BOOST_LOG_TRIVIAL(error) << "Failed to listen for FTP data connections: "
+                             << error_code.message();
+    return false;
+  }
+
+  return true;
 }
 
 void Session::handleHttpRequest(std::string& request) noexcept {

@@ -12,14 +12,18 @@
 #include "protocol/http/request/src/http_parser.hpp"
 #include "user/database/src/user_database.hpp"
 
+namespace server {
+namespace object_storage {
+
 using IOService = boost::asio::io_service;        ///< OS IO services
 using Socket = boost::asio::ip::tcp::socket;      ///< TCP socket
 using Acceptor = boost::asio::ip::tcp::acceptor;  ///< TCP connection acceptor
 using HttpHandler = std::function<void(
     const protocol::http::request::HttpParser&)>;  ///< HTTP request handler
-
-namespace server {
-namespace object_storage {
+using FtpHandler = std::function<void(
+    const protocol::ftp::request::FtpParser&)>;   ///< FTP request handler
+using ErrorCode = boost::system::error_code;      ///< Error code
+using Endpoint = boost::asio::ip::tcp::endpoint;  ///< TCP endpoint
 
 /**
  * \brief Range of port ID values.
@@ -117,6 +121,62 @@ class Session : public std::enable_shared_from_this<Session> {
    */
   void handleFtpRequest(const std::string& request) noexcept;
 
+  /**
+   * \brief Handle FTP USER command.
+   *
+   * \param parser Parsed FTP request.
+   */
+  void handleFtpUser(const protocol::ftp::request::FtpParser& parser);
+
+  /**
+   * \brief Handle FTP PASS command.
+   *
+   * \param parser Parsed FTP request.
+   */
+  void handleFtpPass(const protocol::ftp::request::FtpParser& parser);
+
+  /**
+   * \brief Handle FTP LIST command.
+   *
+   * \param parser Parsed FTP request.
+   */
+  void handleFtpList(const protocol::ftp::request::FtpParser& parser);
+
+  /**
+   * \brief Handle FTP RETR command.
+   *
+   * \param parser Parsed FTP request.
+   */
+  void handleFtpRetr(const protocol::ftp::request::FtpParser& parser);
+
+  /**
+   * \brief Handle FTP STOR command.
+   *
+   * \param parser Parsed FTP request.
+   */
+  void handleFtpStor(const protocol::ftp::request::FtpParser& parser);
+
+  /**
+   * \brief Handle FTP DELE command.
+   *
+   * \param parser Parsed FTP request.
+   */
+  void handleFtpDele(const protocol::ftp::request::FtpParser& parser);
+
+  /**
+   * \brief Handle FTP PASV command.
+   *
+   * \param parser Parsed FTP request.
+   */
+  void handleFtpPasv(const protocol::ftp::request::FtpParser& parser);
+
+  /**
+   * \brief Set up TCP connection acceptor on FTP data socket.
+   *
+   * \return True if server is ready to accept connections, false otherwise.
+   */
+  bool setUpFtpDataConnectionAcceptor() noexcept;
+
   // ------------------ HTTP ------------------
   /**
    * \brief Handle HTTP request.
@@ -197,6 +257,19 @@ class Session : public std::enable_shared_from_this<Session> {
 
   /// Port numbers to use for FTP.
   PortRange ftp_port_range_;
+
+  /// Last username provided in the FTP session.
+  std::string last_username_;
+
+  /// Currently logged in user.
+  std::optional<user::User> logged_in_user_;
+
+  /// Last FTP command executed.
+  protocol::ftp::request::FtpCommand last_ftp_command_;
+
+  /// Mapping from FTP request command to the corresponding handler function.
+  const std::unordered_map<protocol::ftp::request::FtpCommand, FtpHandler>
+      ftp_handlers_;
 
   // ------------------ HTTP ------------------
   /// Mapping from HTTP request method to the corresponding handler function.

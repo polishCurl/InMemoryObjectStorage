@@ -16,12 +16,7 @@ namespace server {
 
 namespace object_storage {
 
-using Acceptor = boost::asio::ip::tcp::acceptor;
-using Endpoint = boost::asio::ip::tcp::endpoint;
-using ErrorCode = boost::system::error_code;
-using IOService = boost::asio::io_service;
 using ThreadPool = std::vector<std::thread>;
-using Socket = boost::asio::ip::tcp::socket;
 
 /**
  * \brief Object storage server logging level.
@@ -78,9 +73,11 @@ class ObjectStorage : public IServer {
   void stop();
 
   /**
-   * \brief Set up TCP connection acceptor.
+   * \brief Set up TCP connection acceptor on HTTP/FTP command socket.
+   *
+   * \return True if server is ready to accept connections, false otherwise.
    */
-  bool setUpSessionAcceptor() noexcept;
+  bool setUpConnectionAcceptor() noexcept;
 
   /**
    * \brief Connection accept handler.
