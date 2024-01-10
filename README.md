@@ -66,6 +66,12 @@ This project uses [Bazel](https://bazel.build/) build system.
 
 Example Object Storage application is located in `example_app.cpp`.
 
+The application can be built with the following command:
+```
+bazel build //:object_storage
+```
+
+## Running
 The application can be built and executed with the following command:
 ```
 bazel run //:object_storage
