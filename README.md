@@ -88,7 +88,6 @@ The only external build dependencies are:
 These dependencies are managed by Bazel.
 
 
-
 ## Running
 To learn about _object_storage_ usage, run:
 ```
@@ -107,6 +106,8 @@ Run:
 ./bazel-bin/object_storage 127.0.0.1 1670 8 auth 30000-40000
 ```
 
+To stop Object Storage, simply press `<Enter>`.
+
 In the provided example, the server is by default configured with one user: _Nord:VPN_.
 
 ### Sending FTP/HTTP requests using _curl_
@@ -124,6 +125,12 @@ List all files stored in Object Storage:
 ```
 curl http://localhost:1670/ --local-port 20000-30000 --user "Nord:VPN"
 curl ftp://localhost:1670  --local-port 30000-40000 --user "Nord:VPN"
+```
+
+Download files using either HTTP or FTP:
+```
+curl http://localhost:1670/the_office/ringtone.mp3 -o /tmp/music_to_my_years.mp3 --local-port 20000-30000 --user "Nord:VPN"
+curl ftp://localhost:1670/test/data/example.json  -o /tmp/ftp_download_example.json --local-port 30000-40000 --user "Nord:VPN" 
 ```
 
 Delete files using either HTTP or FTP:
