@@ -5,6 +5,7 @@ cc_test(
         "integration_tests.hpp",
     ],
     data = glob(["data/*"]),
+    tags = ["exclusive"],
     deps = [
         "//server/object_storage",
         "@googletest//:gtest_main",
@@ -18,6 +19,7 @@ cc_test(
         "integration_tests.hpp",
     ],
     data = glob(["data/*"]),
+    tags = ["exclusive"],
     deps = [
         "//server/object_storage",
         "@googletest//:gtest_main",
