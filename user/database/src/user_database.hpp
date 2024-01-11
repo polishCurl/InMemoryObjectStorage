@@ -18,7 +18,7 @@ namespace user {
 class UserDatabase : public IUserDatabase {
  public:
   bool add(const User& user) override;
-  bool exists(const User& user) const override;
+  bool verify(const User& user) const override;
 
  private:
   /// List of usernames not requiring password.

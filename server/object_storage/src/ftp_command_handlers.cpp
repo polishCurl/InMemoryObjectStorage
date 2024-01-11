@@ -29,19 +29,31 @@ void Session::handleFtpRequest(const std::string& request) noexcept {
 void Session::handleFtpUser(const protocol::ftp::request::FtpParser& parser) {
   // Store the username until the PASS command is received.
   logged_in_user_.reset();
-  last_username_ = parser.getTokens()[1];
-  sendMessage(
-      FtpResponse(FtpReplyCode::USER_NAME_OK, "Please provide password"));
+
+  if (parser.getTokens().size() != 2) {
+    sendMessage(FtpResponse(FtpReplyCode::SYNTAX_ERROR_PARAMETERS,
+                            "No username provided"));
+  } else {
+    last_username_ = parser.getTokens()[1];
+    sendMessage(
+        FtpResponse(FtpReplyCode::USER_NAME_OK, "Please provide password"));
+  }
 }
 
 void Session::handleFtpPass(const protocol::ftp::request::FtpParser& parser) {
   if (last_ftp_command_ != FtpCommand::User) {
     sendMessage(FtpResponse(FtpReplyCode::COMMANDS_BAD_SEQUENCE,
                             "Please specify username first"));
-  } else {
+
+  } else if (parser.getTokens().size() != 2) {
+    sendMessage(FtpResponse(FtpReplyCode::SYNTAX_ERROR_PARAMETERS,
+                            "No password provided"));
+  }
+
+  else {
     // Store the username until the PASS command is received.
     const User user{last_username_, std::string{parser.getTokens()[1]}};
-    if (user_database_.exists(user)) {
+    if (user_database_.verify(user)) {
       logged_in_user_ = user;
       sendMessage(
           FtpResponse(FtpReplyCode::USER_LOGGED_IN, "Login successful"));
@@ -62,28 +74,31 @@ void Session::handleFtpList(const protocol::ftp::request::FtpParser& parser) {
 
   // Serialize the file list into a single text file.
   const auto filepaths = filesystem_.list();
-  auto file = std::make_shared<fs::File>();
+  const auto directory_listing = std::make_shared<fs::File>();
   for (const auto& filepath : filepaths) {
-    *file += filepath + '\n';
+    *directory_listing += filepath + '\n';
   }
 
-  // Asynchronous put the file into the FTP data send queue.
+  // Wait for data connection from FTP client on the data socket. Once the
+  // connection is established send the list of files.
   auto data_socket = std::make_shared<Socket>(io_service_);
   ftp_data_acceptor_.async_accept(
       *data_socket,
-      ftp_data_serializer_.wrap(
-          [data_socket, file, me = shared_from_this()](auto error_code) {
-            if (error_code) {
-              me->sendMessage(FtpResponse(
-                  FtpReplyCode::TRANSFER_ABORTED,
-                  "Data transfer aborted: " + error_code.message()));
-              return;
-            }
+      ftp_data_serializer_.wrap([data_socket, directory_listing,
+                                 me = shared_from_this()](auto error_code) {
+        if (error_code) {
+          me->sendMessage(
+              FtpResponse(FtpReplyCode::TRANSFER_ABORTED,
+                          "Data transfer aborted: " + error_code.message()));
+          return;
+        }
 
-            me->ftp_data_socket_ = data_socket;
-            me->enqueueFtpDataHandler(file, data_socket);
-            me->enqueueFtpDataHandler({}, data_socket);
-          }));
+        me->ftp_data_socket_ = data_socket;
+        me->enqueueFtpDataHandler(directory_listing, data_socket);
+
+        // NULL pointer indicates end of transmission
+        me->enqueueFtpDataHandler({}, data_socket);
+      }));
 }
 
 void Session::handleFtpRetr(const protocol::ftp::request::FtpParser& parser) {
@@ -132,19 +147,25 @@ void Session::handleFtpStor(const protocol::ftp::request::FtpParser& parser) {
     return;
   }
 
-  if (!ftp_data_acceptor_.is_open()) {
-    sendMessage(FtpResponse(FtpReplyCode::ERROR_OPENING_DATA_CONNECTION,
-                            "Error opening data connection"));
+  if (parser.getTokens().size() != 2) {
+    sendMessage(FtpResponse(FtpReplyCode::SYNTAX_ERROR_PARAMETERS,
+                            "No file specified"));
     return;
   }
 
-  auto filepath = std::make_shared<std::string>(parser.getTokens()[1]);
+  if (!ftp_data_acceptor_.is_open()) {
+    sendMessage(FtpResponse(FtpReplyCode::ERROR_OPENING_DATA_CONNECTION,
+                            "Faile to open data connection"));
+    return;
+  }
 
   sendMessage(FtpResponse{FtpReplyCode::FILE_STATUS_OK_OPENING_DATA_CONNECTION,
                           "Ready to receive"});
 
-  auto file = std::make_shared<fs::File>();
-  receiveFtpDataHandler(file, filepath);
+  const auto filepath = std::make_shared<std::string>(
+      current_working_dir_ + std::string{parser.getTokens()[1]});
+  const auto file = std::make_shared<fs::File>();
+  acceptFtpData(file, filepath);
 }
 
 void Session::handleFtpDele(const protocol::ftp::request::FtpParser& parser) {
@@ -195,10 +216,34 @@ void Session::handleFtpPasv(const protocol::ftp::request::FtpParser& parser) {
 }
 
 void Session::handleFtpType(const protocol::ftp::request::FtpParser& parser) {
+  // Simplified handling of FTP TYPE command. We just accept any data
+  // representation type.
   if (!logged_in_user_) {
     sendMessage(FtpResponse(FtpReplyCode::NOT_LOGGED_IN, "Not logged in"));
   } else {
     sendMessage(FtpResponse(FtpReplyCode::COMMAND_OK, "Mode switched"));
+  }
+}
+
+void Session::handleFtpQuit(const protocol::ftp::request::FtpParser& parser) {
+  logged_in_user_.reset();
+  current_working_dir_ = '/';
+  last_ftp_command_ = FtpCommand::Unrecognized;
+  last_username_.clear();
+  sendMessage(FtpResponse(FtpReplyCode::SERVICE_CLOSING_CONTROL_CONNECTION,
+                          "Connection closed"));
+}
+
+void Session::handleFtpCwd(const protocol::ftp::request::FtpParser& parser) {
+  if (!logged_in_user_) {
+    sendMessage(FtpResponse(FtpReplyCode::NOT_LOGGED_IN, "Not logged in"));
+  } else if (parser.getTokens().size() != 2) {
+    sendMessage(FtpResponse(FtpReplyCode::SYNTAX_ERROR_PARAMETERS,
+                            "No directory specified"));
+  } else {
+    current_working_dir_ += std::string{parser.getTokens()[1]} + '/';
+    sendMessage(FtpResponse{FtpReplyCode::FILE_ACTION_COMPLETED,
+                            "Working directory changeds"});
   }
 }
 

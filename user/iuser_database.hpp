@@ -50,7 +50,7 @@ class IUserDatabase {
    *
    * \return True if user exists in the database, false otherwise.
    */
-  virtual bool exists(const User& user) const = 0;
+  virtual bool verify(const User& user) const = 0;
 };
 
 }  // namespace user

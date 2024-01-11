@@ -10,7 +10,7 @@ bool UserDatabase::add(const User& user) {
   return users_.insert({user.username, user.password}).second;
 }
 
-bool UserDatabase::exists(const User& user) const {
+bool UserDatabase::verify(const User& user) const {
   if (!requirePassword(user)) {
     return true;
   }

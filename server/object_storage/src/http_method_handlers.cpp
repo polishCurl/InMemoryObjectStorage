@@ -44,7 +44,7 @@ bool Session::authenticateHttpUser(const HttpParser& parser) noexcept {
   if (authenticate_) {
     const auto auth_info = parser.getAuthInfo();
     user::User user_to_auth{auth_info->username, auth_info->password};
-    const auto user_exists = user_database_.exists(user_to_auth);
+    const auto user_exists = user_database_.verify(user_to_auth);
 
     if (!user_exists) {
       BOOST_LOG_TRIVIAL(error)

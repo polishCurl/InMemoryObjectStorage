@@ -97,3 +97,19 @@ TEST(FtpParserTest, Type) {
   EXPECT_EQ(ftp.getCommand(), FtpCommand::Type);
   EXPECT_THAT(ftp.getTokens(), ::testing::ElementsAreArray({"TYPE", "A"}));
 }
+
+TEST(FtpParserTest, Quit) {
+  std::string ftp_request{"QUIT\r\n"};
+  FtpParser ftp{ftp_request};
+  ASSERT_TRUE(ftp.isValid());
+  EXPECT_EQ(ftp.getCommand(), FtpCommand::Quit);
+  EXPECT_THAT(ftp.getTokens(), ::testing::ElementsAreArray({"QUIT"}));
+}
+
+TEST(FtpParserTest, Cwd) {
+  std::string ftp_request{"CWD docker\r\n"};
+  FtpParser ftp{ftp_request};
+  ASSERT_TRUE(ftp.isValid());
+  EXPECT_EQ(ftp.getCommand(), FtpCommand::Cwd);
+  EXPECT_THAT(ftp.getTokens(), ::testing::ElementsAreArray({"CWD", "docker"}));
+}

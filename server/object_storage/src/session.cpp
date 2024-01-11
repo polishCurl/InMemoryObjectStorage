@@ -38,6 +38,7 @@ Session::Session(IOService& io_service, const user::UserDatabase& user_database,
       ftp_data_serializer_{io_service},
       ftp_port_range_{ftp_port_range},
       last_ftp_command_{FtpCommand::Unrecognized},
+      current_working_dir_{'/'},
       ftp_handlers_{
           {FtpCommand::User,
            std::bind(&Session::handleFtpUser, this, std::placeholders::_1)},
@@ -55,6 +56,10 @@ Session::Session(IOService& io_service, const user::UserDatabase& user_database,
            std::bind(&Session::handleFtpPasv, this, std::placeholders::_1)},
           {FtpCommand::Type,
            std::bind(&Session::handleFtpType, this, std::placeholders::_1)},
+          {FtpCommand::Quit,
+           std::bind(&Session::handleFtpQuit, this, std::placeholders::_1)},
+          {FtpCommand::Cwd,
+           std::bind(&Session::handleFtpCwd, this, std::placeholders::_1)},
       },
       // ------------------ HTTP ------------------
       http_handlers_{
@@ -252,11 +257,12 @@ void Session::enqueueFtpDataHandler(
   });
 }
 
-void Session::receiveFtpDataHandler(
+void Session::acceptFtpData(
     const std::shared_ptr<fs::File>& file,
     const std::shared_ptr<std::string>& filepath) noexcept {
   auto data_socket = std::make_shared<Socket>(io_service_);
 
+  // Once the connection request comes, start asynchronously receiving the file.
   ftp_data_acceptor_.async_accept(
       *data_socket,
       ftp_data_serializer_.wrap([data_socket, file, filepath,
@@ -269,54 +275,49 @@ void Session::receiveFtpDataHandler(
         }
 
         me->ftp_data_socket_ = data_socket;
-        me->saveFtpDataHandler(file, filepath, data_socket);
+        me->receiveData(file, filepath, data_socket);
       }));
 }
 
-void Session::saveFtpDataHandler(
-    const std::shared_ptr<fs::File>& file,
-    const std::shared_ptr<std::string>& filepath,
-    const std::shared_ptr<Socket>& data_socket) noexcept {
+void Session::receiveData(const std::shared_ptr<fs::File>& file,
+                          const std::shared_ptr<std::string>& filepath,
+                          const std::shared_ptr<Socket>& socket) noexcept {
   auto buffer = std::make_shared<fs::File>();
   buffer->resize(1024 * 1024 * 1);
 
   boost::asio::async_read(
-      *data_socket, boost::asio::buffer(*buffer),
+      *socket, boost::asio::buffer(*buffer),
       boost::asio::transfer_at_least(buffer->size()),
       ftp_data_serializer_.wrap(
-          [me = shared_from_this(), file, filepath, data_socket, buffer](
+          [me = shared_from_this(), file, filepath, socket, buffer](
               ErrorCode error_code, std::size_t length) {
             buffer->resize(length);
             if (error_code) {
               if (length > 0) {
                 file->append(*buffer);
               }
-              me->sendMessage(FtpResponse(FtpReplyCode::CLOSING_DATA_CONNECTION,
-                                          "File saved"));
-              me->endDataReceiving(file, filepath, data_socket);
+              me->saveFtpData(file, filepath);
             } else if (length > 0) {
-              me->saveFtpDataHandler(file, filepath, data_socket);
+              me->receiveData(file, filepath, socket);
               file->append(*buffer);
             }
           }));
 }
 
-void Session::endDataReceiving(
+void Session::saveFtpData(
     const std::shared_ptr<fs::File>& file,
-    const std::shared_ptr<std::string>& filepath,
-    const std::shared_ptr<Socket>& data_socket) noexcept {
-  ftp_data_serializer_.post([me = shared_from_this(), file, filepath,
-                             data_socket]() {
+    const std::shared_ptr<std::string>& filepath) noexcept {
+  ftp_data_serializer_.post([me = shared_from_this(), file, filepath]() {
     const auto status = me->filesystem_.add(*filepath, *file);
     switch (status) {
       case fs::Status::Success:
-        BOOST_LOG_TRIVIAL(info) << "Saved file: " << filepath;
+        BOOST_LOG_TRIVIAL(info) << "Saved file: " << *filepath;
         me->sendMessage(
-            FtpResponse(FtpReplyCode::FILE_ACTION_ABORTED, "File not saved"));
+            FtpResponse{FtpReplyCode::CLOSING_DATA_CONNECTION, "File saved"});
         break;
       default:
         me->sendMessage(
-            FtpResponse(FtpReplyCode::CLOSING_DATA_CONNECTION, "File saved"));
+            FtpResponse(FtpReplyCode::FILE_ACTION_ABORTED, "File not saved"));
         break;
     }
 

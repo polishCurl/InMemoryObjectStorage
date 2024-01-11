@@ -136,31 +136,39 @@ class Session : public std::enable_shared_from_this<Session> {
       const std::shared_ptr<Socket>& data_socket) noexcept;
 
   /**
-   * \brief Handler for receiving data on FTP data socket.
+   * \brief Listen on FTP data socket for requests to upload a file.
    *
    * \note This method is asynchronous.
    *
+   * \param file Buffer where the incoming file will be saved.
    * \param filepath Path where the received file will be saved.
    */
-  void receiveFtpDataHandler(
-      const std::shared_ptr<fs::File>& file,
-      const std::shared_ptr<std::string>& filepath) noexcept;
+  void acceptFtpData(const std::shared_ptr<fs::File>& file,
+                     const std::shared_ptr<std::string>& filepath) noexcept;
 
   /**
-   * \brief Handler for saving FTP data filesystem.
+   * \brief Receive data from the given socket.
    *
    * \note This method is asynchronous.
    *
-   * \param filepath Path to save the file.
-   * \param data_socket Socket on which the data will be received.
+   * \param file Buffer where the received file will be saved.
+   * \param filepath Path where the received file will be saved.
+   * \param socket Socket on which the data will be received.
    */
-  void saveFtpDataHandler(const std::shared_ptr<fs::File>& file,
-                          const std::shared_ptr<std::string>& filepath,
-                          const std::shared_ptr<Socket>& data_socket) noexcept;
+  void receiveData(const std::shared_ptr<fs::File>& file,
+                   const std::shared_ptr<std::string>& filepath,
+                   const std::shared_ptr<Socket>& socket) noexcept;
 
-  void endDataReceiving(const std::shared_ptr<fs::File>& file,
-                        const std::shared_ptr<std::string>& filepath,
-                        const std::shared_ptr<Socket>& data_socket) noexcept;
+  /**
+   * \brief Save data to the filesystem.
+   *
+   * \note This method is asynchronous.
+   *
+   * \param file File to save.
+   * \param filepath Path in the filesystem, where the file will be saved.
+   */
+  void saveFtpData(const std::shared_ptr<fs::File>& file,
+                   const std::shared_ptr<std::string>& filepath) noexcept;
 
   /**
    * \brief Handle FTP request.
@@ -224,6 +232,20 @@ class Session : public std::enable_shared_from_this<Session> {
    * \param parser Parsed FTP request.
    */
   void handleFtpType(const protocol::ftp::request::FtpParser& parser);
+
+  /**
+   * \brief Handle FTP QUIT command.
+   *
+   * \param parser Parsed FTP request.
+   */
+  void handleFtpQuit(const protocol::ftp::request::FtpParser& parser);
+
+  /**
+   * \brief Handle FTP CWD command.
+   *
+   * \param parser Parsed FTP request.
+   */
+  void handleFtpCwd(const protocol::ftp::request::FtpParser& parser);
 
   /**
    * \brief Set up TCP connection acceptor on FTP data socket.
@@ -321,6 +343,9 @@ class Session : public std::enable_shared_from_this<Session> {
 
   /// Last FTP command executed.
   protocol::ftp::request::FtpCommand last_ftp_command_;
+
+  /// Current user's working directory.
+  std::string current_working_dir_;
 
   /// Mapping from FTP request command to the corresponding handler function.
   const std::unordered_map<protocol::ftp::request::FtpCommand, FtpHandler>
