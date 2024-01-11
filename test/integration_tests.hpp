@@ -118,12 +118,12 @@ class IntegrationTest : public ::testing::TestWithParam<TestParams> {
    *
    * Delete local temporary file used only for testing.
    */
-  void TearDown() override { /*std::filesystem::remove(kOutFileName);*/
-  }
+  void TearDown() override { std::filesystem::remove(kOutFileName); }
 
+  /// Object storage server under test.
   std::unique_ptr<server::object_storage::ObjectStorage> server_;
-  bool authenticate_;
-  std::size_t thread_count_;
+  bool authenticate_;         ///< Enable/disable user server authentication
+  std::size_t thread_count_;  ///< Number of threads used by the server.
 };
 
 /////////////////////////////////////////////////////////////////////////
@@ -192,7 +192,6 @@ int curl(const std::string& uri, const std::string& method,
   // Make curl output only HTTP status code returned by the server.
   command += " -w \"%{http_code}\n\" ";
 
-  std::cerr << "HTTP command: " << command << '\n';
   return std::stoi(execute(command));
 }
 }  // namespace http

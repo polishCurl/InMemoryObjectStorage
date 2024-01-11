@@ -42,19 +42,6 @@ TEST_P(IntegrationTest, UploadTwice) {
   ASSERT_EQ(uri.size() + 1, std::filesystem::file_size(kOutFileName));
 }
 
-/*
-TEST_P(IntegrationTest, RemoveFromEmpty) {
-  const std::string file_to_upload("test/data/example.json");
-  const std::string uri("/test/data/example.json");
-
-  ASSERT_TRUE(std::filesystem::exists(file_to_upload));
-  ASSERT_EQ(201, http::curl(uri, "PUT", authenticate_, file_to_upload));
-
-  ASSERT_TRUE(curl("/test/data/example.json",
-                   std::make_optional<std::string>("DELE"), authenticate_));
-}
-*/
-
 TEST_P(IntegrationTest, NotAuthorized) {
   const std::string username{"Lando"};
   const std::string password{"Norris"};
