@@ -80,13 +80,6 @@ The application can be built with the following command:
 bazel build //:object_storage
 ```
 
-## Running
-The application can be built and executed with the following command:
-```
-bazel run //:object_storage
-```
-
-
 ### External dependencies
 The only external build dependencies are:
 - `boost::asio`
@@ -95,6 +88,49 @@ The only external build dependencies are:
 These dependencies are managed by Bazel.
 
 
+
+## Running
+To learn about _object_storage_ usage, run:
+```
+./bazel-bin/object_storage 
+```
+
+For example, to launch the Object Storage server with:
+- address 127.0.0.1
+- port number 1670
+- 8 worker threads
+- HTTP basic authentication and FTP login enabled
+- With client port numbers 30000-40000 to use for FTP
+
+Run:
+```
+./bazel-bin/object_storage 127.0.0.1 1670 8 auth 30000-40000
+```
+
+In the provided example, the server is by default configured with one user: _Nord:VPN_.
+
+### Sending FTP/HTTP requests using _curl_
+Upload `test/data/example.json` to Object Storage using HTTP:
+```
+curl http://127.0.0.1:1670/test/data/example.json -X PUT -T test/data/example.json  --local-port 20000-30000  --user Nord:VPN
+```
+
+Upload `test/data/the_office_theme.mp3` to Object Storage using FTP and save it under `the_office/ringtone.mp3`:
+```
+curl ftp://localhost:1670/the_office/ringtone.mp3 -T test/data/the_office_theme.mp3  --local-port 30000-40000 --user "Nord:VPN"
+```
+
+List all files stored in Object Storage:
+```
+curl http://localhost:1670/ --local-port 20000-30000 --user "Nord:VPN"
+curl ftp://localhost:1670  --local-port 30000-40000 --user "Nord:VPN"
+```
+
+Delete files using either HTTP or FTP:
+```
+curl http://localhost:1670/the_office/ringtone.mp3 -X DELETE --local-port 20000-30000 --user "Nord:VPN"
+curl ftp://localhost:1670  -Q "DELE /test/data/example.json" --local-port 30000-40000 --user "Nord:VPN"
+```
 
 
 ## Testing
@@ -122,6 +158,8 @@ genhtml bazel-out/_coverage/_coverage_report.dat -o genhtml
 
 The top-level coverage report will be placed in `genhtml/index.html`
 
+Note: `bazel coverage` is not supported on MacOS.
+
 
 ## Supported platforms
 Object store has been tested on the following platforms (OS -- compiler):
@@ -144,6 +182,6 @@ TODO list:
 1. Support TLS (HTTPS and FTPS) connections on the same port.
 2. Add support for more FTP commands.
 3. Add support for more HTTP methods.
-4. Create mocks for the defined interfaces and use them in unit tests using dependency injection.
-5. Create microbenchmarks for measuring performance of key components of the _Object storage_.
+4. Create mocks for the defined interfaces and use them in unit tests using dependency injection and improve code coverage.
+5. Create microbenchmarks for measuring performance of key components of the _Object storage_. See my [example microbenchmark](https://github.com/polishCurl/IPv4_geo_lookup/blob/main/csv/csv_reader/bench/csv_reader_bench.cpp).
 6. Enable CI/CD.
