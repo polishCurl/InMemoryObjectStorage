@@ -44,13 +44,16 @@ bool ObjectStorage::start(std::size_t thread_count) {
     workers_.emplace_back([this] { io_service_.run(); });
   }
 
+  BOOST_LOG_TRIVIAL(info) << "Server running with " << thread_count
+                          << " thread(s)";
+
   BOOST_LOG_TRIVIAL(info) << "Server listening at "
                           << acceptor_.local_endpoint().address() << ':'
                           << acceptor_.local_endpoint().port();
 
-  BOOST_LOG_TRIVIAL(info) << "Using client port numbers "
+  BOOST_LOG_TRIVIAL(info) << "FTP client port numbers "
                           << ftp_port_range_.min_port << '-'
-                          << ftp_port_range_.max_port << " for FTP";
+                          << ftp_port_range_.max_port;
 
   return true;
 }
