@@ -14,6 +14,13 @@ The service supports storing files using one protocol and retrieving them with a
 The object storage is **in-memory**, it is **not persistent**.
 
 ### Features
+_Object Storage_ server:
+- Service for non-persistent (in-memory) storage of objects/files of any type.
+- Terminal-based application.
+- Protocols supported: HTTP/1.1 and FTP
+- Both HTTP and FTP are supported on the same port.
+- Protocol used by the client (FTP vs HTTP) is initially inferred from the client's port number. Then is detected from packet header.
+- Store files using one protocol and retrieve them with another.
 - Multithreaded operation (configurable number of threads)
 - Asynchronous IO
 - Configurable logging level
@@ -23,8 +30,10 @@ FTP:
 - Download files: `RETR /{key}`
 - Upload files: `STOR /{key}`
 - Remove files: `DELETE /{key}`
-- Support for passive mode (only)
 - FTP login (optional): `USER <username>` and `PASS <password>`
+- Support for passive mode (only): `PASV`
+- Change working directory: `CWD <directory>`
+- Close connection: `QUIT`
 
 HTTP:
 - List all stored files: `GET /`
