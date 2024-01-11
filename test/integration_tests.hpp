@@ -118,7 +118,8 @@ class IntegrationTest : public ::testing::TestWithParam<TestParams> {
    *
    * Delete local temporary file used only for testing.
    */
-  void TearDown() override { std::filesystem::remove(kOutFileName); }
+  void TearDown() override { /* std::filesystem::remove(kOutFileName); */
+  }
 
   /// Object storage server under test.
   std::unique_ptr<server::object_storage::ObjectStorage> server_;
@@ -260,6 +261,9 @@ int curl(TestScenario scenario, const std::string& uri,
       command += uri;
       command += " -T " + filename;
       break;
+    case TestScenario::Retr:
+      command += uri + " -o " + filename;
+      break;
     default:
       break;
   }
@@ -275,7 +279,6 @@ int curl(TestScenario scenario, const std::string& uri,
 
   command += " 2> /dev/stdout";
 
-  std::cerr << "FTP command: " << command << '\n';
   const auto output = execute(command);
   if (output.size() == 0) {
     return 0;

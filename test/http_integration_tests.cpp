@@ -16,7 +16,7 @@ TEST_P(IntegrationTest, ListEmpty) {
   ASSERT_EQ(0, std::filesystem::file_size(kOutFileName));
 }
 
-TEST_P(IntegrationTest, RemoveFromEmpty) {
+TEST_P(IntegrationTest, DeleteFromEmpty) {
   ASSERT_EQ(404, curl("/does/not/exists.txt", "DELETE", authenticate_));
 }
 
@@ -32,7 +32,7 @@ TEST_P(IntegrationTest, UploadDownload) {
   ASSERT_TRUE(compareFiles(file_to_upload, std::string{kOutFileName}));
 }
 
-TEST_P(IntegrationTest, UploadRemove) {
+TEST_P(IntegrationTest, UploadDelete) {
   const std::string file_to_upload("test/data/example.json");
   const std::string uri("/data/example.json");
 
