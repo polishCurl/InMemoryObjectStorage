@@ -126,9 +126,9 @@ void Session::handleFtpRetr(const protocol::ftp::request::FtpParser& parser) {
                       "Sending file"));
       break;
     default:
-      sendMessage(FtpResponse(FtpReplyCode::ACTION_ABORTED_LOCAL_ERROR,
-                              "Error opening file for transfer"));
-      break;
+      sendMessage(
+          FtpResponse(FtpReplyCode::ACTION_NOT_TAKEN, "File not found"));
+      return;
   }
 
   // Wait for data connection from FTP client on the data socket. Once the

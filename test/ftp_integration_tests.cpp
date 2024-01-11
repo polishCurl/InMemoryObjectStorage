@@ -73,7 +73,7 @@ TEST_P(IntegrationTest, GetFileNotFound) {
   ASSERT_TRUE(std::filesystem::exists(file_to_upload));
   ASSERT_EQ(
       0, curl(TestScenario::Stor, uri_upload, authenticate_, file_to_upload));
-  ASSERT_EQ(451, curl(TestScenario::Retr, uri_download, authenticate_));
+  ASSERT_EQ(550, curl(TestScenario::Retr, uri_download, authenticate_));
   ASSERT_EQ(0, std::filesystem::file_size(kOutFileName));
 }
 
