@@ -7,7 +7,6 @@
 #include <fstream>
 #include <iterator>
 #include <memory>
-#include <optional>
 #include <ostream>
 #include <string>
 #include <tuple>
@@ -209,11 +208,21 @@ static constexpr std::uint16_t kMinFtpClientPortId{2000};
 /// Default maximum client port number used for FTP.
 static constexpr std::uint16_t kMaxFtpClientPortId{3000};
 
+/// FTP test scenarios
+enum class TestScenario {
+  List,
+  Retr,
+  Stor,
+  Dele,
+  NotSupported,
+  ParamMissing,
+};
+
 /**
  * \brief Run 'curl' FTP command with given parameters.
  *
+ * \param scenario Test scenario.
  * \param uri Uniform Resource Identifier.
- * \param ftp_command FTP command to specifically use, if any. Use uppercase.
  * \param authenticate Use FTP login, or not.
  * \param filename Local file to use for download/upload.
  * \param username Username to authenticate.
@@ -223,7 +232,7 @@ static constexpr std::uint16_t kMaxFtpClientPortId{3000};
  *
  * \return 0 if curl completed successfully, FTP reply code otherwise.
  */
-int curl(const std::string& uri, std::optional<std::string> ftp_command,
+int curl(TestScenario scenario, const std::string& uri,
          bool authenticate = false,
          const std::string& filename = std::string{kOutFileName},
          const std::string& username = std::string{kUsername},
@@ -234,14 +243,26 @@ int curl(const std::string& uri, std::optional<std::string> ftp_command,
 {
   std::string command{"curl -s -S"};
   command += " ftp://" + host + ':' + std::to_string(port);
-  command += " -o " + filename;
 
-  if (ftp_command) {
-    command += " -Q \"" + *ftp_command + ' ' + uri + '\"';
-  }
-
-  if (command == "STOR") {
-    command += " -T " + filename;
+  switch (scenario) {
+    case TestScenario::List:
+      command += " -o " + filename;
+      break;
+    case TestScenario::Dele:
+      command += " -Q \"DELE " + uri + '\"';
+      break;
+    case TestScenario::NotSupported:
+      command += " -Q \"REIN\"";
+      break;
+    case TestScenario::ParamMissing:
+      command += " -Q \"DELE\"";
+      break;
+    case TestScenario::Stor:
+      command += uri;
+      command += " -T " + filename;
+      break;
+    default:
+      break;
   }
 
   // Provide user credentials

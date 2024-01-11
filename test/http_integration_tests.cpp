@@ -6,7 +6,7 @@ using namespace test::http;
 
 TEST_P(IntegrationTest, StartStop) {}
 
-TEST_P(IntegrationTest, UnrecognizedMethod) {
+TEST_P(IntegrationTest, Unsupported) {
   ASSERT_EQ(400, curl("/", "HEAD", authenticate_));
   ASSERT_EQ(0, std::filesystem::file_size(kOutFileName));
 }

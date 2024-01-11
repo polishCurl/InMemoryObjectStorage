@@ -317,7 +317,7 @@ void Session::saveFtpData(
         break;
       default:
         me->sendMessage(
-            FtpResponse(FtpReplyCode::FILE_ACTION_ABORTED, "File not saved"));
+            FtpResponse(FtpReplyCode::FILE_ACTION_NOT_TAKEN, "File not saved"));
         break;
     }
 
