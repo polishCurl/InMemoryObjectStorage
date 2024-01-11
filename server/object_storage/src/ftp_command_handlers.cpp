@@ -13,7 +13,7 @@ using protocol::ftp::response::FtpResponse;
 
 using user::User;
 
-void Session::handleFtpRequest(const std::string& request) noexcept {
+void Session::handleFtp(const std::string& request) noexcept {
   // If request is valid, delegate it to the right handler based on the FTP
   // command.
   FtpParser parser{request};
@@ -178,7 +178,7 @@ void Session::handleFtpStor(const protocol::ftp::request::FtpParser& parser) {
   const auto filepath = std::make_shared<std::string>(
       current_working_dir_ + std::string{parser.getTokens()[1]});
   const auto file = std::make_shared<fs::File>();
-  acceptFtpData(file, filepath);
+  acceptFile(file, filepath);
 }
 
 void Session::handleFtpDele(const protocol::ftp::request::FtpParser& parser) {
@@ -209,7 +209,7 @@ void Session::handleFtpPasv(const protocol::ftp::request::FtpParser& parser) {
     return;
   }
 
-  if (!setUpFtpDataConnectionAcceptor()) {
+  if (!configureDataAcceptor()) {
     sendMessage(FtpResponse(FtpReplyCode::SERVICE_NOT_AVAILABLE,
                             "Passive mode not supported"));
   } else {

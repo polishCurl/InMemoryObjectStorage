@@ -12,7 +12,7 @@ using protocol::http::response::HttpResponse;
 using protocol::http::response::HttpResponseHeaders;
 using protocol::http::response::HttpStatus;
 
-void Session::handleHttpRequest(std::string& request) noexcept {
+void Session::handleHttp(std::string& request) noexcept {
   auto status_line_size = request.size();
 
   // Read the rest of the HTTP request (excluding message body)
@@ -31,7 +31,7 @@ void Session::handleHttpRequest(std::string& request) noexcept {
     BOOST_LOG_TRIVIAL(error) << "Failed to parse HTTP request:\n" << request;
     sendMessage(HttpResponse{HttpStatus::BadRequest});
 
-  } else if (!authenticateHttpUser(parser)) {
+  } else if (!authHttpUser(parser)) {
     sendMessage(HttpResponse{HttpStatus::Unauthorized,
                              HttpResponseHeaders{{"WWW-Authenticate", "Basic"},
                                                  {"Content-Length", "0"}}});
@@ -40,7 +40,7 @@ void Session::handleHttpRequest(std::string& request) noexcept {
   }
 }
 
-bool Session::authenticateHttpUser(const HttpParser& parser) noexcept {
+bool Session::authHttpUser(const HttpParser& parser) noexcept {
   if (authenticate_) {
     const auto auth_info = parser.getAuthInfo();
     user::User user_to_auth{auth_info->username, auth_info->password};

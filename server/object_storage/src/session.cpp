@@ -23,10 +23,8 @@ namespace object_storage {
 
 Session::Session(IOService& io_service, const user::UserDatabase& user_database,
                  bool authenticate, fs::MemoryFs& filesystem,
-                 PortRange ftp_port_range,
-                 const std::function<void()>& completion_handler)
+                 PortRange ftp_port_range)
     :  // ------------------ COMMON ------------------
-      completion_handler_{completion_handler},
       user_database_{user_database},
       authenticate_{authenticate},
       filesystem_{filesystem},
@@ -74,20 +72,18 @@ Session::Session(IOService& io_service, const user::UserDatabase& user_database,
 Session::~Session() {
   closeSocket();
   closeFtpDataSocket();
-  completion_handler_();
 }
 
 void Session::start() noexcept {
   BOOST_LOG_TRIVIAL(debug) << "Starting session with "
                            << getRemoteEndpointInfo();
   setTcpNoDelay();
-  serializer_.post(
-      [me = shared_from_this()]() { me->receiveMessageHandler(); });
+  serializer_.post([me = shared_from_this()]() { me->receiveMessage(); });
 
   // Send 'ready for new user' message only if we know that the client is FTP.
   const auto client_port = socket_.remote_endpoint().port();
   if ((client_port >= ftp_port_range_.min_port) &&
-      (client_port <= ftp_port_range_.max_port))
+      (client_port < ftp_port_range_.max_port))
     sendMessage(FtpResponse(FtpReplyCode::SERVICE_READY_FOR_NEW_USER,
                             "Welcome to ObjectStorage server"));
 }
@@ -112,7 +108,7 @@ std::string Session::getRemoteEndpointInfo() const noexcept {
          std::to_string(socket_.remote_endpoint().port());
 }
 
-void Session::receiveMessageHandler() noexcept {
+void Session::receiveMessage() noexcept {
   // Asynchronously read input request until CRLF symbol is found. The CRLF is
   // shared between HTTP (end of request line) and FTP (end of entire
   // request).
@@ -144,15 +140,15 @@ void Session::receiveMessageHandler() noexcept {
 
           switch (app_layer_protocol) {
             case AppLayerProtocol::Http:
-              me->handleHttpRequest(packet);
+              me->handleHttp(packet);
               break;
 
             case AppLayerProtocol::Ftp:
-              me->handleFtpRequest(packet);
+              me->handleFtp(packet);
               break;
           }
 
-          me->receiveMessageHandler();
+          me->receiveMessage();
         }
       }));
 }
@@ -257,7 +253,7 @@ void Session::enqueueFtpDataHandler(
   });
 }
 
-void Session::acceptFtpData(
+void Session::acceptFile(
     const std::shared_ptr<fs::File>& file,
     const std::shared_ptr<std::string>& filepath) noexcept {
   auto data_socket = std::make_shared<Socket>(io_service_);
@@ -275,11 +271,11 @@ void Session::acceptFtpData(
         }
 
         me->ftp_data_socket_ = data_socket;
-        me->receiveData(file, filepath, data_socket);
+        me->receiveFile(file, filepath, data_socket);
       }));
 }
 
-void Session::receiveData(const std::shared_ptr<fs::File>& file,
+void Session::receiveFile(const std::shared_ptr<fs::File>& file,
                           const std::shared_ptr<std::string>& filepath,
                           const std::shared_ptr<Socket>& socket) noexcept {
   auto buffer = std::make_shared<fs::File>();
@@ -296,17 +292,16 @@ void Session::receiveData(const std::shared_ptr<fs::File>& file,
               if (length > 0) {
                 file->append(*buffer);
               }
-              me->saveFtpData(file, filepath);
+              me->saveFile(file, filepath);
             } else if (length > 0) {
-              me->receiveData(file, filepath, socket);
+              me->receiveFile(file, filepath, socket);
               file->append(*buffer);
             }
           }));
 }
 
-void Session::saveFtpData(
-    const std::shared_ptr<fs::File>& file,
-    const std::shared_ptr<std::string>& filepath) noexcept {
+void Session::saveFile(const std::shared_ptr<fs::File>& file,
+                       const std::shared_ptr<std::string>& filepath) noexcept {
   ftp_data_serializer_.post([me = shared_from_this(), file, filepath]() {
     const auto status = me->filesystem_.add(*filepath, *file);
     switch (status) {
@@ -325,7 +320,7 @@ void Session::saveFtpData(
   });
 }
 
-bool Session::setUpFtpDataConnectionAcceptor() noexcept {
+bool Session::configureDataAcceptor() noexcept {
   ErrorCode error_code;
   if (ftp_data_acceptor_.is_open()) {
     ftp_data_acceptor_.close(error_code);

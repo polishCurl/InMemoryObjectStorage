@@ -42,12 +42,11 @@ class Session : public std::enable_shared_from_this<Session> {
    * \param user_database Users recognized by the server.
    * \param authenticate Enable/disable user authentication.
    * \param filesystem Filesystem to manage.
-   * \param ftp_range Client port numbers to use for FTP (inclusive range).
-   * \param completion_handler Handler to invoke once this session is destroyed.
+   * \param ftp_port_range Port numbers to use by clients for FTP.
    */
   Session(IOService& io_service, const user::UserDatabase& user_database,
-          bool authenticate, fs::MemoryFs& filesystem, PortRange ftp_range,
-          const std::function<void()>& completion_handler);
+          bool authenticate, fs::MemoryFs& filesystem,
+          PortRange ftp_port_range);
 
   // Disable copy and move since we are inheriting from shared_from_this
   Session(const Session&) = delete;
@@ -71,12 +70,12 @@ class Session : public std::enable_shared_from_this<Session> {
  private:
   // ------------------ COMMON ------------------
   /**
-   * \brief Disable Nagle's algorithm on HTTP/FTP command socket.
+   * \brief Disable Nagle's algorithm on HTTP/FTP socket.
    */
   void setTcpNoDelay() noexcept;
 
   /**
-   * \brief Close HTTP/FTP command socket.
+   * \brief Close HTTP/FTP socket.
    */
   void closeSocket() noexcept;
 
@@ -88,21 +87,24 @@ class Session : public std::enable_shared_from_this<Session> {
   std::string getRemoteEndpointInfo() const noexcept;
 
   /**
-   * \brief Handler for receiving messages on HTTP/FTP command socket.
+   * \brief Handler for receiving messages on HTTP/FTP socket.
    *
    * \note This method is asynchronous.
    */
-  void receiveMessageHandler() noexcept;
+  void receiveMessage() noexcept;
 
   /**
-   * \brief Handler for sending messages on HTTP/FTP command socket.
+   * \brief Take the next message from send queue and transmit it.
    *
    * \note This method is asynchronous.
    */
   void sendMessageHandler() noexcept;
 
   /**
-   * \brief Send message on HTTP/FTP command socket.
+   * \brief Send message on HTTP/FTP socket.
+   *
+   * \note The message is put on the send queue and will be transmitted
+   * asynchronously.
    *
    * \param message Message to send.
    */
@@ -143,11 +145,11 @@ class Session : public std::enable_shared_from_this<Session> {
    * \param file Buffer where the incoming file will be saved.
    * \param filepath Path where the received file will be saved.
    */
-  void acceptFtpData(const std::shared_ptr<fs::File>& file,
-                     const std::shared_ptr<std::string>& filepath) noexcept;
+  void acceptFile(const std::shared_ptr<fs::File>& file,
+                  const std::shared_ptr<std::string>& filepath) noexcept;
 
   /**
-   * \brief Receive data from the given socket.
+   * \brief Receive data on the given socket.
    *
    * \note This method is asynchronous.
    *
@@ -155,27 +157,27 @@ class Session : public std::enable_shared_from_this<Session> {
    * \param filepath Path where the received file will be saved.
    * \param socket Socket on which the data will be received.
    */
-  void receiveData(const std::shared_ptr<fs::File>& file,
+  void receiveFile(const std::shared_ptr<fs::File>& file,
                    const std::shared_ptr<std::string>& filepath,
                    const std::shared_ptr<Socket>& socket) noexcept;
 
   /**
-   * \brief Save data to the filesystem.
+   * \brief Save file to the filesystem.
    *
    * \note This method is asynchronous.
    *
    * \param file File to save.
    * \param filepath Path in the filesystem, where the file will be saved.
    */
-  void saveFtpData(const std::shared_ptr<fs::File>& file,
-                   const std::shared_ptr<std::string>& filepath) noexcept;
+  void saveFile(const std::shared_ptr<fs::File>& file,
+                const std::shared_ptr<std::string>& filepath) noexcept;
 
   /**
    * \brief Handle FTP request.
    *
    * \param request Request to handle.
    */
-  void handleFtpRequest(const std::string& request) noexcept;
+  void handleFtp(const std::string& request) noexcept;
 
   /**
    * \brief Handle FTP USER command.
@@ -248,11 +250,11 @@ class Session : public std::enable_shared_from_this<Session> {
   void handleFtpCwd(const protocol::ftp::request::FtpParser& parser);
 
   /**
-   * \brief Set up TCP connection acceptor on FTP data socket.
+   * \brief Set up connection acceptor on FTP data socket.
    *
    * \return True if server is ready to accept connections, false otherwise.
    */
-  bool setUpFtpDataConnectionAcceptor() noexcept;
+  bool configureDataAcceptor() noexcept;
 
   // ------------------ HTTP ------------------
   /**
@@ -260,7 +262,7 @@ class Session : public std::enable_shared_from_this<Session> {
    *
    * \param request Request to handle.
    */
-  void handleHttpRequest(std::string& request) noexcept;
+  void handleHttp(std::string& request) noexcept;
 
   /**
    * \brief Authenticate HTTP user.
@@ -275,8 +277,7 @@ class Session : public std::enable_shared_from_this<Session> {
    *
    * \return True if user was authenticated successfully, false otherwise.
    */
-  bool authenticateHttpUser(
-      const protocol::http::request::HttpParser& parser) noexcept;
+  bool authHttpUser(const protocol::http::request::HttpParser& parser) noexcept;
 
   /**
    * \brief Handle HTTP GET request.
@@ -300,14 +301,13 @@ class Session : public std::enable_shared_from_this<Session> {
   void handleHttpDelete(const protocol::http::request::HttpParser& parser);
 
   // ------------------ COMMON ------------------
-  const std::function<void()> completion_handler_;  ///< Completion handler
-  const user::UserDatabase& user_database_;         ///< User database
-  const bool authenticate_;                         ///< Authenticate users
-  fs::MemoryFs& filesystem_;                        ///< In-memory file storage
-  IOService& io_service_;                           ///< OS IO services
-  Socket socket_;                                   ///< HTTP/FTP command socket
+  const user::UserDatabase& user_database_;  ///< User database
+  const bool authenticate_;                  ///< Authenticate users
+  fs::MemoryFs& filesystem_;                 ///< In-memory file storage
+  IOService& io_service_;                    ///< OS IO services
+  Socket socket_;                            ///< HTTP/FTP socket
 
-  /// Serializer for handler execution on HTTP/FTP command socket
+  /// Serializer for handler execution on HTTP/FTP socket
   IOService::strand serializer_;
 
   /// Buffer for reading messages from HTTP/FTP socket
@@ -347,12 +347,12 @@ class Session : public std::enable_shared_from_this<Session> {
   /// Current user's working directory.
   std::string current_working_dir_;
 
-  /// Mapping from FTP request command to the corresponding handler function.
+  /// Mapping from FTP command to the corresponding handler function.
   const std::unordered_map<protocol::ftp::request::FtpCommand, FtpHandler>
       ftp_handlers_;
 
   // ------------------ HTTP ------------------
-  /// Mapping from HTTP request method to the corresponding handler function.
+  /// Mapping from HTTP method to the corresponding handler function.
   const std::unordered_map<protocol::http::request::HttpMethod, HttpHandler>
       http_handlers_;
 };

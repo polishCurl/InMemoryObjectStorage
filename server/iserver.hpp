@@ -15,7 +15,7 @@ class IServer {
   /**
    * \brief Start server.
    *
-   * \param thread_count The size of the thread pool to use (Must not be 0).
+   * \param thread_count Number of threads to use.
    *
    * \return True if server was started successfully, false otherwise.
    */

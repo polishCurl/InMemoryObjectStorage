@@ -95,7 +95,7 @@ To learn about _object_storage_ usage, run:
 ```
 
 For example, to launch the Object Storage server with:
-- address 127.0.0.1
+- IPv4 address 127.0.0.1
 - port number 1670
 - 8 worker threads
 - HTTP basic authentication and FTP login enabled

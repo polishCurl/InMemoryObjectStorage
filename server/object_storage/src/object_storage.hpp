@@ -41,15 +41,16 @@ class ObjectStorage : public IServer {
    * establishing connection with this server. All client ports outside the FTP
    * range are assumed HTTP.
    *
-   * \param address The host to accept incoming connections from.
-   * \param port The port to start the server on.
+   * \param address IPv4 address.
+   * \param port On which the server will be listening for new connections.
    * \param log_level Logging level used by the server (logging verbosity).
    * \param authenticate Enable/disable user authentication.
-   * \param ftp_range Client port numbers to use for FTP (inclusive range).
+   * \param ftp_port_range Client port numbers to use for FTP (inclusive range).
    */
   ObjectStorage(const std::string& address = std::string("0.0.0.0"),
                 uint16_t port = 21, LogLevel log_level = LogLevel::Info,
-                bool authenticate = false, PortRange ftp_range = {2000, 3000});
+                bool authenticate = false,
+                PortRange ftp_port_range = {2000, 3000});
 
   // No use case for copying and moving for now.
   ObjectStorage(ObjectStorage&&) = delete;
@@ -73,40 +74,40 @@ class ObjectStorage : public IServer {
   void stop();
 
   /**
-   * \brief Set up TCP connection acceptor on HTTP/FTP command socket.
+   * \brief Set up TCP connection acceptor on HTTP/FTP socket.
    *
    * \return True if server is ready to accept connections, false otherwise.
    */
-  bool setUpConnectionAcceptor() noexcept;
+  bool configureAcceptor() noexcept;
 
   /**
-   * \brief Connection accept handler.
+   * \brief Accept connection request from client on the HTTP/FTP command
+   * socket.
    *
    * \note This method is asynchronous.
    *
-   * \param session Session associated with the connection.
-   * \param error_code Connection accept status (error) code.
+   * \param session Session created for the connection.
+   * \param error_code Error code.
    */
-  void acceptConnectionHandler(const std::shared_ptr<Session>& session,
-                               ErrorCode const& error_code) noexcept;
+  void acceptConnection(const std::shared_ptr<Session>& session,
+                        ErrorCode const& error_code) noexcept;
 
   /**
    * \brief Set up server logging.
    */
   void setUpLogging() noexcept;
 
-  user::UserDatabase users_;  ///< Users recognised by the server
+  user::UserDatabase users_;  ///< Server users
   fs::MemoryFs filesystem_;   ///< In-memory file storage
-  std::string address_;       ///< Host on which to accept connections
+  std::string address_;       ///< IPv4 addres used by the server
   const uint16_t port_;       ///< Server port number
   LogLevel log_level_;        ///< Server logging level
 
-  ThreadPool workers_;                      ///< Server worker threads
-  IOService io_service_;                    ///< OS IO services
-  Acceptor acceptor_;                       ///< TCP connection acceptor
-  std::atomic<int> open_connection_count_;  ///< Open TCP connection count
-  const bool authenticate_;                 ///< Authenticate users
-  PortRange ftp_port_range_;                ///< Port numbers to use for FTP.
+  ThreadPool workers_;        ///< Server worker threads
+  IOService io_service_;      ///< OS IO services
+  Acceptor acceptor_;         ///< TCP connection acceptor
+  const bool authenticate_;   ///< Authenticate users
+  PortRange ftp_port_range_;  ///< Port numbers to use for FTP.
 };
 
 }  // namespace object_storage
