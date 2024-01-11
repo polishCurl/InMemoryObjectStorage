@@ -5,7 +5,7 @@ In-memory file storage service written in C++.
 ## Description
 _Object Storage_ runs as a terminal application over TCP using two protocols - HTTP/1.1 and FTP. 
 
-Both HTTP and FTP control channels are available on the same port. The protocol used by the client is automatically inferred from the client's port number.
+Both HTTP and FTP control channels are available on the same port. The protocol used by the client is initially inferred from the client's port number. Then it is detected from packet headers.
 
 The port number range dedicated to FTP protocol is configurable. All other port numbers are assumed HTTP.
 
@@ -15,12 +15,6 @@ The object storage is **in-memory**, it is **not persistent**.
 
 ### Features
 _Object Storage_ server:
-- Service for non-persistent (in-memory) storage of objects/files of any type.
-- Terminal-based application.
-- Protocols supported: HTTP/1.1 and FTP
-- Both HTTP and FTP are supported on the same port.
-- Protocol used by the client (FTP vs HTTP) is initially inferred from the client's port number. Then is detected from packet header.
-- Store files using one protocol and retrieve them with another.
 - Multithreaded operation (configurable number of threads)
 - Asynchronous IO
 - Configurable logging level
@@ -29,7 +23,7 @@ FTP:
 - List all stored files: `LIST`
 - Download files: `RETR /{key}`
 - Upload files: `STOR /{key}`
-- Remove files: `DELETE /{key}`
+- Remove files: `DELE /{key}`
 - FTP login (optional): `USER <username>` and `PASS <password>`
 - Support for passive mode (only): `PASV`
 - Change working directory: `CWD <directory>`
@@ -73,9 +67,9 @@ docker rm object_storage_container
 ## Building
 This project uses [Bazel](https://bazel.build/) build system.
 
-Example Object Storage application is located in `example_app.cpp`.
+Example application is located in `example_app.cpp`.
 
-The application can be built with the following command:
+The Object Storage can be built with the following command:
 ```
 bazel build //:object_storage
 ```
@@ -108,7 +102,7 @@ Run:
 
 To stop Object Storage, simply press `<Enter>`.
 
-In the provided example, the server is by default configured with one user: _Nord:VPN_.
+In the provided example, the server is by default configured with one user: `Nord:VPN`.
 
 ### Sending FTP/HTTP requests using _curl_
 Upload `test/data/example.json` to Object Storage using HTTP:
