@@ -113,10 +113,12 @@ void Session::handleFtpRetr(const protocol::ftp::request::FtpParser& parser) {
     return;
   }
 
-  const std::string filepath{parser.getTokens()[1]};
+  const std::string filepath{current_working_dir_ +
+                             std::string{parser.getTokens()[1]}};
   // Otherwise, get the file from the filesystem and send it in response (if
   // it was found).
   const auto [status, file] = filesystem_.get(filepath);
+
   switch (status) {
     case fs::Status::Success:
       sendMessage(
@@ -128,17 +130,28 @@ void Session::handleFtpRetr(const protocol::ftp::request::FtpParser& parser) {
                               "Error opening file for transfer"));
       break;
   }
-  /*
-  if (!file) {
-    sendFtpMessage(FtpReplyCode::ACTION_ABORTED_LOCAL_ERROR,
-                   "Error opening file for transfer");
-    return;
-  }
 
-  sendFtpMessage(FtpReplyCode::FILE_STATUS_OK_OPENING_DATA_CONNECTION,
-                 "Sending file");
-  sendFile(file);
-  */
+  // Wait for data connection from FTP client on the data socket. Once the
+  // connection is established send the list of files.
+  const auto file_to_send = std::make_shared<fs::File>(file);
+  const auto data_socket = std::make_shared<Socket>(io_service_);
+  ftp_data_acceptor_.async_accept(
+      *data_socket,
+      ftp_data_serializer_.wrap([data_socket, file_to_send,
+                                 me = shared_from_this()](auto error_code) {
+        if (error_code) {
+          me->sendMessage(
+              FtpResponse(FtpReplyCode::TRANSFER_ABORTED,
+                          "Data transfer aborted: " + error_code.message()));
+          return;
+        }
+
+        me->ftp_data_socket_ = data_socket;
+        me->enqueueFtpDataHandler(file_to_send, data_socket);
+
+        // NULL pointer indicates end of transmission
+        me->enqueueFtpDataHandler({}, data_socket);
+      }));
 }
 
 void Session::handleFtpStor(const protocol::ftp::request::FtpParser& parser) {
@@ -243,7 +256,7 @@ void Session::handleFtpCwd(const protocol::ftp::request::FtpParser& parser) {
   } else {
     current_working_dir_ += std::string{parser.getTokens()[1]} + '/';
     sendMessage(FtpResponse{FtpReplyCode::FILE_ACTION_COMPLETED,
-                            "Working directory changeds"});
+                            "Working directory changed"});
   }
 }
 
