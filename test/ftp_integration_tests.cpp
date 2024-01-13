@@ -101,16 +101,33 @@ TEST_P(IntegrationTest, NotAuthorized) {
   const std::string file("test/data/example.json");
   const std::string uri("/test/data/example.json");
 
-  const auto authenticate = std::get<1>(GetParam());
-
-  int ftp_reply_code = authenticate ? 530 : 0;
-  ASSERT_EQ(0, curl(TestScenario::List, "", authenticate_));
+  int ftp_reply_code = authenticate_ ? 530 : 0;
+  ASSERT_EQ(ftp_reply_code,
+            curl(TestScenario::List, "", authenticate_,
+                 std::string{kOutFileName}, username, password));
   ASSERT_EQ(ftp_reply_code, curl(TestScenario::Stor, uri, authenticate_, file,
                                  username, password));
   ASSERT_EQ(ftp_reply_code,
             curl(TestScenario::Retr, uri, authenticate_, username, password));
-  ASSERT_EQ(ftp_reply_code, curl(TestScenario::Dele, uri, authenticate_, file,
-                                 username, password));
+  ASSERT_EQ(ftp_reply_code,
+            curl(TestScenario::Dele, uri, authenticate_,
+                 std::string{kOutFileName}, username, password));
+}
+
+TEST_P(IntegrationTest, AnonymousUser) {
+  const std::string username{"anonymous"};
+  const std::string password{"this!PassWORD!sS3ckear"};
+  const std::string file("test/data/example.json");
+  const std::string uri("/test/data/example.json");
+
+  ASSERT_EQ(0, curl(TestScenario::List, "", authenticate_,
+                    std::string{kOutFileName}, username, password));
+  ASSERT_EQ(0, curl(TestScenario::Stor, uri, authenticate_, file, username,
+                    password));
+  ASSERT_EQ(0, curl(TestScenario::Retr, uri, authenticate_,
+                    std::string{kOutFileName}, username, password));
+  ASSERT_EQ(0, curl(TestScenario::Dele, uri, authenticate_,
+                    std::string{kOutFileName}, username, password));
 }
 
 /**

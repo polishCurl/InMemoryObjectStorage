@@ -84,7 +84,7 @@ class Session : public std::enable_shared_from_this<Session> {
    *
    * \return Remote endpoint info.
    */
-  std::string getRemoteEndpointInfo() const noexcept;
+  std::string getRemoteEndpoint() const noexcept;
 
   /**
    * \brief Handler for receiving messages on HTTP/FTP socket.
