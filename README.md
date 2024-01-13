@@ -1,4 +1,4 @@
-# Object storage
+# HTTP/FTP in-memory file server
 In-memory file storage service written in C++. 
 
 
