@@ -84,7 +84,7 @@ class Session : public std::enable_shared_from_this<Session> {
    *
    * \return Remote endpoint info.
    */
-  std::string getRemoteEndpoint() const noexcept;
+  std::string getClientInfo() const noexcept;
 
   /**
    * \brief Handler for receiving messages on HTTP/FTP socket.
@@ -306,6 +306,8 @@ class Session : public std::enable_shared_from_this<Session> {
   fs::MemoryFs& filesystem_;                 ///< In-memory file storage
   IOService& io_service_;                    ///< OS IO services
   Socket socket_;                            ///< HTTP/FTP socket
+  std::string client_address_;               ///< Client IPv4 addres
+  std::uint16_t client_port_;                ///< Client port number
 
   /// Serializer for handler execution on HTTP/FTP socket
   IOService::strand serializer_;

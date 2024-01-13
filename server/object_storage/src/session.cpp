@@ -75,7 +75,10 @@ Session::~Session() {
 }
 
 void Session::start() noexcept {
-  BOOST_LOG_TRIVIAL(debug) << "Starting session with " << getRemoteEndpoint();
+  client_address_ = socket_.remote_endpoint().address().to_string();
+  client_port_ = socket_.remote_endpoint().port();
+  BOOST_LOG_TRIVIAL(debug) << "Client connected: " << getClientInfo();
+
   setTcpNoDelay();
   serializer_.post([me = shared_from_this()]() { me->receiveMessage(); });
 
@@ -102,9 +105,8 @@ void Session::closeSocket() noexcept {
   socket_.close(error_code);
 }
 
-std::string Session::getRemoteEndpoint() const noexcept {
-  return socket_.remote_endpoint().address().to_string() + ":" +
-         std::to_string(socket_.remote_endpoint().port());
+std::string Session::getClientInfo() const noexcept {
+  return client_address_ + ":" + std::to_string(client_port_);
 }
 
 void Session::receiveMessage() noexcept {
@@ -118,7 +120,7 @@ void Session::receiveMessage() noexcept {
         if (error_code) {
           if (error_code == boost::asio::error::eof) {
             BOOST_LOG_TRIVIAL(info)
-                << "Connection closed by " << me->getRemoteEndpoint();
+                << "Connection closed by " << me->getClientInfo();
           } else {
             BOOST_LOG_TRIVIAL(error)
                 << "Failed to read HTTP/FTP request header: "
