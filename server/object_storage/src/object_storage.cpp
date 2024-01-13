@@ -24,12 +24,12 @@ ObjectStorage::ObjectStorage(const std::string& address, uint16_t port,
 
 bool ObjectStorage::start(std::size_t thread_count) {
   if (thread_count == 0) {
-    BOOST_LOG_TRIVIAL(info) << "No threads were provided";
+    BOOST_LOG_TRIVIAL(error) << "No threads were provided";
     return false;
   }
 
   if (ftp_port_range_.min_port >= ftp_port_range_.max_port) {
-    BOOST_LOG_TRIVIAL(info)
+    BOOST_LOG_TRIVIAL(error)
         << "Invalid FTP port range provided (" << ftp_port_range_.min_port
         << ',' << ftp_port_range_.max_port << ')';
     return false;
@@ -139,11 +139,6 @@ void ObjectStorage::acceptConnection(const std::shared_ptr<Session>& session,
         << "Failed to accept session: " << error_code.message();
     return;
   }
-
-  BOOST_LOG_TRIVIAL(debug)
-      << "Client connected: "
-      << session->getSocket().remote_endpoint().address().to_string() << ':'
-      << session->getSocket().remote_endpoint().port();
 
   session->start();
 

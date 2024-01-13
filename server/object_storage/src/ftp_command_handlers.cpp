@@ -17,6 +17,7 @@ void Session::handleFtp(const std::string& request) noexcept {
   // If request is valid, delegate it to the right handler based on the FTP
   // command.
   FtpParser parser{request};
+  BOOST_LOG_TRIVIAL(debug) << "FTP command:\n" << request;
   if (parser.isValid()) {
     const auto ftp_command = parser.getCommand();
     ftp_handlers_.at(ftp_command)(parser);

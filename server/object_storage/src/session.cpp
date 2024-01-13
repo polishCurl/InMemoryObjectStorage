@@ -77,7 +77,7 @@ Session::~Session() {
 void Session::start() noexcept {
   client_address_ = socket_.remote_endpoint().address().to_string();
   client_port_ = socket_.remote_endpoint().port();
-  BOOST_LOG_TRIVIAL(debug) << "Client connected: " << getClientInfo();
+  BOOST_LOG_TRIVIAL(info) << "Client connected: " << getClientInfo();
 
   setTcpNoDelay();
   serializer_.post([me = shared_from_this()]() { me->receiveMessage(); });
@@ -136,7 +136,7 @@ void Session::receiveMessage() noexcept {
           std::string packet;
           packet.resize(header_length);
           stream.read(&packet[0], header_length);
-          BOOST_LOG_TRIVIAL(debug) << "Received message:\n" << packet;
+          BOOST_LOG_TRIVIAL(trace) << "Received message:\n" << packet;
           const auto app_layer_protocol = detectProtocol(packet);
 
           switch (app_layer_protocol) {
@@ -155,7 +155,7 @@ void Session::receiveMessage() noexcept {
 }
 
 void Session::sendMessageHandler() noexcept {
-  BOOST_LOG_TRIVIAL(debug) << "Sending message:\n" << output_queue_.front();
+  BOOST_LOG_TRIVIAL(trace) << "Sending message:\n" << output_queue_.front();
 
   // Get the next message from send queue and send it asynchronously.
   boost::asio::async_write(
