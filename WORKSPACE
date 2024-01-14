@@ -17,8 +17,8 @@ http_archive(
 # Boost
 http_archive(
     name = "com_github_nelhage_rules_boost",
-    strip_prefix = "rules_boost-96e9b631f104b43a53c21c87b01ac538ad6f3b48",
-    url = "https://github.com/nelhage/rules_boost/archive/96e9b631f104b43a53c21c87b01ac538ad6f3b48.tar.gz",
+    strip_prefix = "rules_boost-28a32b81d829e49979475d9c539b297f88712006",
+    url = "https://github.com/nelhage/rules_boost/archive/28a32b81d829e49979475d9c539b297f88712006.tar.gz",
 )
 
 load("@com_github_nelhage_rules_boost//:boost/boost.bzl", "boost_deps")
