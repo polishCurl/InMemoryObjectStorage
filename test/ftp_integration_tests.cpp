@@ -81,7 +81,7 @@ TEST_P(IntegrationTest, MultipleLargeFiles) {
   std::vector<std::string> files{
       "test/data/the_office_theme.mp3",
       "test/data/bmw_picture.jpeg",
-      "test/data/household_expenditure.csv",
+      "test/data/overseas-trade-indexes.csv",
   };
 
   for (const auto& file : files) {
