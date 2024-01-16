@@ -8,6 +8,7 @@ RUN apt-get install -y doxygen
 RUN apt-get install -y lcov
 RUN apt-get install -y git-lfs
 RUN apt-get install -y gdb
+RUN apt-get install -y clang
 
 # Install Bazel
 RUN apt-get install -y apt-transport-https curl gnupg -y

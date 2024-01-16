@@ -69,9 +69,16 @@ This project uses [Bazel](https://bazel.build/) build system.
 
 Example application is located in `example_app.cpp`.
 
-The Object Storage can be built with the following command:
+The Object Storage can be built with the following commands.
+
+Build with gcc:
 ```
-bazel build //:object_storage
+bazel build //:object_storage  --config=gcc
+```
+
+Build with clang:
+```
+bazel build //:object_storage  --config=clang
 ```
 
 ### External dependencies
@@ -136,7 +143,7 @@ Both unit and intergration tests were implemented using the [GoogleTest](https:/
 Integration tests use the _curl_ command line utility and they are located in `test` folder.
 
 
-Build and execute all tests (unit and integration):
+Build and execute all tests (unit and integration) using the default compiler:
 ```
 bazel test //...
 ```
@@ -160,8 +167,9 @@ Note: `bazel coverage` is not supported on MacOS.
 
 ## Supported platforms
 Object store has been tested on the following platforms (OS -- compiler):
-1. Ubuntu 20.04.6 LTS -- gcc (Ubuntu 9.4.0-1ubuntu1~20.04.2) 9.4.0
-2. macOS 12.4 -- Apple clang version 13.1.6 (clang-1316.0.21.2.5)
+1. Ubuntu 20.04.6 LTS -- gcc 9.4.0
+2. Ubuntu 20.04.6 LTS -- clang 10.0.0
+3. macOS 12.4 -- Apple clang version 13.1.6
 
 Since object store uses platform-independent `boost::asio` library for networking, minimal changes would need to be made to the application to support Windows OS.
 

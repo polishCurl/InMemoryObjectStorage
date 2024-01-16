@@ -2,6 +2,8 @@ common --cxxopt='-std=c++17'
 common --cxxopt='-Werror'
 common --cxxopt='-Wall'
 common --color=yes
+common:clang --repo_env=CC=clang
+common:gcc --repo_env=CC=gcc
 
 run -c opt
 run --cxxopt='-O3'
