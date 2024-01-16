@@ -18,7 +18,7 @@ int main(int argc, char *argv[]) {
   // ObjectStorage server{"127.0.0.1", 1670, LogLevel::Debug};
 
   if (argc != 6) {
-    std::cout << "Usage ./object_storage <address> <port> <threads>  "
+    std::cout << "Usage ./object_storage <address> <port> <threads> "
                  "<auth|no_auth> <ftp_port_range>\n";
     return -1;
   }
