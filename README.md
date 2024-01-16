@@ -105,13 +105,9 @@ To stop Object Storage, simply press `<Enter>`.
 In the provided example, the server is by default configured with one user: `Nord:VPN`.
 
 ### Sending FTP/HTTP requests using _curl_
-Upload `test/data/example.json` to Object Storage using HTTP:
+Upload files:
 ```
-curl http://127.0.0.1:1670/test/data/example.json -X PUT -T test/data/example.json  --local-port 20000-30000  --user Nord:VPN
-```
-
-Upload `test/data/the_office_theme.mp3` to Object Storage using FTP and save it under `the_office/ringtone.mp3`:
-```
+curl http://127.0.0.1:1670/test/data/example.json -T test/data/example.json  --local-port 20000-30000  --user Nord:VPN
 curl ftp://localhost:1670/the_office/ringtone.mp3 -T test/data/the_office_theme.mp3  --local-port 30000-40000 --user "Nord:VPN"
 ```
 
@@ -121,13 +117,13 @@ curl http://localhost:1670/ --local-port 20000-30000 --user "Nord:VPN"
 curl ftp://localhost:1670  --local-port 30000-40000 --user "Nord:VPN"
 ```
 
-Download files using either HTTP or FTP:
+Download files:
 ```
 curl http://localhost:1670/the_office/ringtone.mp3 -o /tmp/music_to_my_years.mp3 --local-port 20000-30000 --user "Nord:VPN"
 curl ftp://localhost:1670/test/data/example.json  -o /tmp/ftp_download_example.json --local-port 30000-40000 --user "Nord:VPN" 
 ```
 
-Delete files using either HTTP or FTP:
+Delete files:
 ```
 curl http://localhost:1670/the_office/ringtone.mp3 -X DELETE --local-port 20000-30000 --user "Nord:VPN"
 curl ftp://localhost:1670  -Q "DELE /test/data/example.json" --local-port 30000-40000 --user "Nord:VPN"
