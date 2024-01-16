@@ -83,41 +83,45 @@ void Session::handleHttpGet(const HttpParser& parser) {
         break;
     }
   }
+
+  receiveMessage();
 }
 
 void Session::handleHttpPut(const HttpParser& parser) {
-  ErrorCode error_code;
+  if (parser["expect"] && (*parser["expect"] == "100-continue")) {
+    sendMessage(HttpResponse{HttpStatus::Continue});
+  }
+
   const auto file_size = parser.getResourceSize();
   const auto filepath = std::string{parser.getUri()};
+  auto file = std::make_shared<fs::File>();
+  file->resize(file_size);
 
-  // Read the HTTP message body containing the content/resource/file.
-  auto bytes_read =
-      boost::asio::read(socket_, input_stream_,
-                        boost::asio::transfer_exactly(file_size), error_code);
+  boost::asio::async_read(
+      socket_, boost::asio::buffer(*file),
+      boost::asio::transfer_exactly(file_size),
+      serializer_.wrap([me = shared_from_this(), file, filepath](
+                           ErrorCode error_code, std::size_t length) {
+        if (error_code) {
+          me->sendMessage(HttpResponse{HttpStatus::InternalServerError});
+        } else {
+          const auto status = me->filesystem_.add(std::string{filepath}, *file);
+          switch (status) {
+            case fs::Status::Success:
+              BOOST_LOG_TRIVIAL(info) << "Saved file: " << filepath;
+              me->sendMessage(HttpResponse{HttpStatus::Created});
+              break;
+            case fs::Status::AlreadyExists:
+              me->sendMessage(HttpResponse{HttpStatus::NotFound});
+              break;
+            default:
+              me->sendMessage(HttpResponse{HttpStatus::InternalServerError});
+              break;
+          }
+        }
 
-  if (bytes_read != file_size) {
-    BOOST_LOG_TRIVIAL(error) << "Failed to read " << file_size
-                             << " bytes (Actual: " << bytes_read << ')';
-    sendMessage(HttpResponse{HttpStatus::BadRequest});
-  } else {
-    auto bufs = input_stream_.data();
-    fs::File file(boost::asio::buffers_begin(bufs),
-                  boost::asio::buffers_begin(bufs) + file_size);
-
-    const auto status = filesystem_.add(std::string{filepath}, file);
-    switch (status) {
-      case fs::Status::Success:
-        BOOST_LOG_TRIVIAL(info) << "Saved file: " << filepath;
-        sendMessage(HttpResponse{HttpStatus::Created});
-        break;
-      case fs::Status::AlreadyExists:
-        sendMessage(HttpResponse{HttpStatus::NotFound});
-        break;
-      default:
-        sendMessage(HttpResponse{HttpStatus::InternalServerError});
-        break;
-    }
-  }
+        me->receiveMessage();
+      }));
 }
 
 void Session::handleHttpDelete(const HttpParser& parser) {
@@ -135,6 +139,8 @@ void Session::handleHttpDelete(const HttpParser& parser) {
       sendMessage(HttpResponse{HttpStatus::InternalServerError});
       break;
   }
+
+  receiveMessage();
 }
 
 }  // namespace object_storage

@@ -25,6 +25,8 @@ void Session::handleFtp(const std::string& request) noexcept {
   } else {
     sendMessage(FtpResponse(FtpReplyCode::SYNTAX_ERROR_UNRECOGNIZED_COMMAND));
   }
+
+  receiveMessage();
 }
 
 void Session::handleFtpUser(const protocol::ftp::request::FtpParser& parser) {

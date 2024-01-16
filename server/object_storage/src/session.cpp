@@ -129,7 +129,7 @@ void Session::receiveMessage() noexcept {
 
           me->ftp_data_acceptor_.close(error_code);
           me->ftp_data_serializer_.post([me]() { me->closeFtpDataSocket(); });
-
+          me->receiveMessage();
         } else {
           // Process packet to determine if if is HTTP or FTP.
           std::istream stream(&(me->input_stream_));
@@ -148,8 +148,6 @@ void Session::receiveMessage() noexcept {
               me->handleFtp(packet);
               break;
           }
-
-          me->receiveMessage();
         }
       }));
 }
