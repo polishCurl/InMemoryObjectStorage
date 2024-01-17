@@ -130,6 +130,31 @@ TEST_P(IntegrationTest, AnonymousUser) {
                     std::string{kOutFileName}, username, password));
 }
 
+TEST_P(IntegrationTest, PassWithoutUser) {
+  const std::string username{"some_%ser"};
+  const std::string password{"this!PassWORD!sS3ckear"};
+  const std::string flags("test/data/example.json");
+
+  int ftp_reply_code = authenticate_ ? 503 : 0;
+  ASSERT_EQ(
+      ftp_reply_code,
+      curl(TestScenario::List, "", authenticate_, std::string{kOutFileName},
+           username, password, std::string{kHostname}, kServerPortId,
+           " --ftp-alternative-to-user \"PASS some_passw0r!\""));
+}
+
+TEST_P(IntegrationTest, UserNoParam) {
+  const std::string username{"some_%ser"};
+  const std::string password{"this!PassWORD!sS3ckear"};
+  const std::string flags("test/data/example.json");
+
+  int ftp_reply_code = authenticate_ ? 501 : 0;
+  ASSERT_EQ(ftp_reply_code, curl(TestScenario::List, "", authenticate_,
+                                 std::string{kOutFileName}, username, password,
+                                 std::string{kHostname}, kServerPortId,
+                                 " --ftp-alternative-to-user \"USER\""));
+}
+
 /**
  * \brief Instantiate parametrized ObjectStorage FTP test suite
  *

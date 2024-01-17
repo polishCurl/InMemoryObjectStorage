@@ -229,6 +229,7 @@ enum class TestScenario {
  * \param password Password to authenticate.
  * \param host Hostname to use.
  * \param port Port ID to use.
+ * \param flags Additional flags to pass to curl.
  *
  * \return 0 if curl completed successfully, FTP reply code otherwise.
  */
@@ -238,7 +239,7 @@ int curl(TestScenario scenario, const std::string& uri,
          const std::string& username = std::string{kUsername},
          const std::string& password = std::string{kPassword},
          const std::string& host = std::string{kHostname},
-         std::uint16_t port = kServerPortId)
+         std::uint16_t port = kServerPortId, std::string flags = "")
 
 {
   std::string command{"curl -s -S"};
@@ -277,6 +278,7 @@ int curl(TestScenario scenario, const std::string& uri,
   command += "  --local-port " + std::to_string(kMinFtpClientPortId) + '-' +
              std::to_string(kMaxFtpClientPortId);
 
+  command += flags;
   command += " 2> /dev/stdout";
 
   const auto output = execute(command);
