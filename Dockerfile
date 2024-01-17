@@ -17,5 +17,6 @@ RUN mv bazel-archive-keyring.gpg /usr/share/keyrings
 RUN echo "deb [arch=amd64 signed-by=/usr/share/keyrings/bazel-archive-keyring.gpg] https://storage.googleapis.com/bazel-apt stable jdk1.8" | tee /etc/apt/sources.list.d/bazel.list
 RUN apt-get update
 RUN apt-get install -y bazel
+RUN echo "source /etc/bash_completion.d/bazel" >> ~/.bashrc
 
 WORKDIR /object_storage
