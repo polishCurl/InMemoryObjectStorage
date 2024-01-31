@@ -1,9 +1,15 @@
-common --cxxopt='-std=c++17'
-common --cxxopt='-Werror'
-common --cxxopt='-Wall'
 common --color=yes
-common:clang --repo_env=CC=clang
-common:gcc --repo_env=CC=gcc
+
+build --cxxopt='-std=c++17'
+build --cxxopt='-Werror'
+build --cxxopt='-Wall'
+build:clang --repo_env=CC=clang
+build:gcc --repo_env=CC=gcc
+
+build:clang-tidy --aspects clang_tidy/clang_tidy.bzl%clang_tidy_aspect
+build:clang-tidy --output_groups=report
+build:clang-tidy --cxxopt='-Wno-error=unknown-warning-option'
+build:clang-tidy --keep_going
 
 run -c opt
 run --cxxopt='-O3'

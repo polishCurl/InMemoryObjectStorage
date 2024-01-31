@@ -1,0 +1,7 @@
+Checks: >
+    bugprone-*,
+    cppcoreguidelines-*,
+    google-*,
+    performance-*,
+
+WarningsAsErrors: "*"

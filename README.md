@@ -162,7 +162,16 @@ genhtml bazel-out/_coverage/_coverage_report.dat -o genhtml
 
 The top-level coverage report will be placed in `genhtml/index.html`
 
-Note: `bazel coverage` is not supported on MacOS.
+Note: _bazel coverage_ is not supported on MacOS.
+
+
+### Static code analysis 
+_clang-tidy_ has been integrated into the bazel build system.
+
+To run linter over all production source code:
+```
+bazel build //... --config clang-tidy
+```
 
 
 ## Supported platforms
@@ -171,7 +180,7 @@ Object store has been tested on the following platforms (OS -- compiler):
 2. Ubuntu 20.04.6 LTS -- clang 10.0.0
 3. macOS 12.4 -- Apple clang version 13.1.6
 
-Since object store uses platform-independent `boost::asio` library for networking, minimal changes would need to be made to the application to support Windows OS.
+Since object store uses platform-independent _boost::asio_ library for networking, minimal changes would need to be made to the application to support Windows OS.
 
 
 ## Documentation

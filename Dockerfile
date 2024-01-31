@@ -9,6 +9,7 @@ RUN apt-get install -y lcov
 RUN apt-get install -y git-lfs
 RUN apt-get install -y gdb
 RUN apt-get install -y clang
+RUN apt-get install -y clang-tidy
 
 # Install Bazel
 RUN apt-get install -y apt-transport-https curl gnupg -y
