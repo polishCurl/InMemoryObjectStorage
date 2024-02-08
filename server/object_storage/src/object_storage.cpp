@@ -81,7 +81,7 @@ bool ObjectStorage::addUser(const std::string& username,
   return user_added;
 }
 
-bool ObjectStorage::configureAcceptor() noexcept {
+bool ObjectStorage::configureAcceptor() {
   ErrorCode error_code{};
   const Endpoint endpoint{boost::asio::ip::make_address(address_, error_code),
                           port_};
@@ -133,7 +133,7 @@ bool ObjectStorage::configureAcceptor() noexcept {
 }
 
 void ObjectStorage::acceptConnection(const std::shared_ptr<Session>& session,
-                                     ErrorCode const& error_code) noexcept {
+                                     ErrorCode const& error_code) {
   if (error_code) {
     BOOST_LOG_TRIVIAL(error)
         << "Failed to accept session: " << error_code.message();

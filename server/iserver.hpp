@@ -26,14 +26,14 @@ class IServer {
    *
    * \return The port number.
    */
-  virtual std::uint16_t getPort() const noexcept = 0;
+  [[nodiscard]] virtual std::uint16_t getPort() const noexcept = 0;
 
   /**
    * \brief Get the IP address the server is listening on.
    *
    * \return The IP address.
    */
-  virtual std::string getAddress() const noexcept = 0;
+  [[nodiscard]] virtual std::string getAddress() const noexcept = 0;
 
   /**
    * \brief Add a new user with the given username and password.

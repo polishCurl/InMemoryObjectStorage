@@ -44,8 +44,9 @@ class HttpParser : public IMemberAccess, public IValidate {
    *
    * \param buffer Raw input buffer containing HTTP request.
    */
-  HttpParser(const std::string& buffer) noexcept;
+  explicit HttpParser(const std::string& buffer) noexcept;
 
+  ~HttpParser() = default;
   HttpParser(const HttpParser& other) = delete;
   HttpParser(HttpParser&& other) = delete;
   HttpParser& operator=(const HttpParser& other) = delete;

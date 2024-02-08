@@ -58,7 +58,7 @@ class Session : public std::enable_shared_from_this<Session> {
   /**
    * \brief Start session.
    */
-  void start() noexcept;
+  void start();
 
   /**
    * \brief Return the socket on which this session was created.
@@ -91,14 +91,14 @@ class Session : public std::enable_shared_from_this<Session> {
    *
    * \note This method is asynchronous.
    */
-  void receiveMessage() noexcept;
+  void receiveMessage();
 
   /**
    * \brief Take the next message from send queue and transmit it.
    *
    * \note This method is asynchronous.
    */
-  void sendMessageHandler() noexcept;
+  void sendMessageHandler();
 
   /**
    * \brief Send message on HTTP/FTP socket.
@@ -123,7 +123,7 @@ class Session : public std::enable_shared_from_this<Session> {
    *
    * \param data_socket Socket on which to send.
    */
-  void sendFtpDataHandler(const std::shared_ptr<Socket>& data_socket) noexcept;
+  void sendFtpDataHandler(const std::shared_ptr<Socket>& data_socket);
 
   /**
    * \brief Handler for enqueueing data to FTP-send buffer.
@@ -133,9 +133,8 @@ class Session : public std::enable_shared_from_this<Session> {
    * \param file File to send.
    * \param data_socket Socket on which the data will be sent.
    */
-  void enqueueFtpDataHandler(
-      const std::shared_ptr<fs::File>& file,
-      const std::shared_ptr<Socket>& data_socket) noexcept;
+  void enqueueFtpDataHandler(const std::shared_ptr<fs::File>& file,
+                             const std::shared_ptr<Socket>& data_socket);
 
   /**
    * \brief Listen on FTP data socket for requests to upload a file.
@@ -146,7 +145,7 @@ class Session : public std::enable_shared_from_this<Session> {
    * \param filepath Path where the received file will be saved.
    */
   void acceptFile(const std::shared_ptr<fs::File>& file,
-                  const std::shared_ptr<std::string>& filepath) noexcept;
+                  const std::shared_ptr<std::string>& filepath);
 
   /**
    * \brief Receive data on the given socket.
@@ -159,7 +158,7 @@ class Session : public std::enable_shared_from_this<Session> {
    */
   void receiveFile(const std::shared_ptr<fs::File>& file,
                    const std::shared_ptr<std::string>& filepath,
-                   const std::shared_ptr<Socket>& socket) noexcept;
+                   const std::shared_ptr<Socket>& socket);
 
   /**
    * \brief Save file to the filesystem.
@@ -170,7 +169,7 @@ class Session : public std::enable_shared_from_this<Session> {
    * \param filepath Path in the filesystem, where the file will be saved.
    */
   void saveFile(const std::shared_ptr<fs::File>& file,
-                const std::shared_ptr<std::string>& filepath) noexcept;
+                const std::shared_ptr<std::string>& filepath);
 
   /**
    * \brief Handle FTP request.

@@ -47,10 +47,11 @@ class ObjectStorage : public IServer {
    * \param authenticate Enable/disable user authentication.
    * \param ftp_port_range Client port numbers to use for FTP (inclusive range).
    */
-  ObjectStorage(const std::string& address = std::string("0.0.0.0"),
-                uint16_t port = 21, LogLevel log_level = LogLevel::Info,
-                bool authenticate = false,
-                PortRange ftp_port_range = {2000, 3000});
+  explicit ObjectStorage(const std::string& address = std::string("0.0.0.0"),
+                         uint16_t port = 21,
+                         LogLevel log_level = LogLevel::Info,
+                         bool authenticate = false,
+                         PortRange ftp_port_range = {2000, 3000});
 
   // No use case for copying and moving for now.
   ObjectStorage(ObjectStorage&&) = delete;
@@ -58,7 +59,7 @@ class ObjectStorage : public IServer {
   ObjectStorage(const ObjectStorage&) = delete;
   ObjectStorage& operator=(const ObjectStorage&) = delete;
 
-  ~ObjectStorage() { stop(); };
+  ~ObjectStorage() override { stop(); };
 
   bool start(std::size_t thread_count = 1) override;
 
@@ -78,7 +79,7 @@ class ObjectStorage : public IServer {
    *
    * \return True if server is ready to accept connections, false otherwise.
    */
-  bool configureAcceptor() noexcept;
+  bool configureAcceptor();
 
   /**
    * \brief Accept connection request from client on the HTTP/FTP command
@@ -90,7 +91,7 @@ class ObjectStorage : public IServer {
    * \param error_code Error code.
    */
   void acceptConnection(const std::shared_ptr<Session>& session,
-                        ErrorCode const& error_code) noexcept;
+                        ErrorCode const& error_code);
 
   /**
    * \brief Set up server logging.

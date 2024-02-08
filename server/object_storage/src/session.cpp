@@ -74,7 +74,7 @@ Session::~Session() {
   closeFtpDataSocket();
 }
 
-void Session::start() noexcept {
+void Session::start() {
   client_address_ = socket_.remote_endpoint().address().to_string();
   client_port_ = socket_.remote_endpoint().port();
   BOOST_LOG_TRIVIAL(info) << "Client connected: " << getClientInfo();
@@ -85,19 +85,21 @@ void Session::start() noexcept {
   // Send 'ready for new user' message only if we know that the client is FTP.
   const auto client_port = socket_.remote_endpoint().port();
   if ((client_port >= ftp_port_range_.min_port) &&
-      (client_port < ftp_port_range_.max_port))
+      (client_port < ftp_port_range_.max_port)) {
     sendMessage(static_cast<std::string>(
         FtpResponse(FtpReplyCode::SERVICE_READY_FOR_NEW_USER,
                     "Welcome to ObjectStorage server")));
+  }
 }
 
 void Session::setTcpNoDelay() noexcept {
   ErrorCode error_code;
   socket_.set_option(boost::asio::ip::tcp::no_delay(true), error_code);
-  if (error_code)
+  if (error_code) {
     BOOST_LOG_TRIVIAL(error)
         << "Failed to set HTTP/FTP socket option TCP_NODELAY:"
         << error_code.message();
+  }
 }
 
 void Session::closeSocket() noexcept {
@@ -110,7 +112,7 @@ std::string Session::getClientInfo() const noexcept {
   return client_address_ + ":" + std::to_string(client_port_);
 }
 
-void Session::receiveMessage() noexcept {
+void Session::receiveMessage() {
   // Asynchronously read input request until CRLF symbol is found. The CRLF is
   // shared between HTTP (end of request line) and FTP (end of entire
   // request).
@@ -153,7 +155,7 @@ void Session::receiveMessage() noexcept {
       }));
 }
 
-void Session::sendMessageHandler() noexcept {
+void Session::sendMessageHandler() {
   BOOST_LOG_TRIVIAL(trace) << "Sending message:\n" << output_queue_.front();
 
   // Get the next message from send queue and send it asynchronously.
@@ -200,8 +202,7 @@ void Session::closeFtpDataSocket() noexcept {
   }
 }
 
-void Session::sendFtpDataHandler(
-    const std::shared_ptr<Socket>& data_socket) noexcept {
+void Session::sendFtpDataHandler(const std::shared_ptr<Socket>& data_socket) {
   ftp_data_serializer_.post([me = shared_from_this(), data_socket]() {
     // Get the next file from FTP data socket send queue.
     const auto data = me->ftp_data_buffer_.front();
@@ -241,7 +242,7 @@ void Session::sendFtpDataHandler(
 
 void Session::enqueueFtpDataHandler(
     const std::shared_ptr<fs::File>& file,
-    const std::shared_ptr<Socket>& data_socket) noexcept {
+    const std::shared_ptr<Socket>& data_socket) {
   ftp_data_serializer_.post([me = shared_from_this(), file, data_socket]() {
     // Enqueue the file for sending and trigger the send handler if the are no
     // pending writes.
@@ -253,9 +254,8 @@ void Session::enqueueFtpDataHandler(
   });
 }
 
-void Session::acceptFile(
-    const std::shared_ptr<fs::File>& file,
-    const std::shared_ptr<std::string>& filepath) noexcept {
+void Session::acceptFile(const std::shared_ptr<fs::File>& file,
+                         const std::shared_ptr<std::string>& filepath) {
   auto data_socket = std::make_shared<Socket>(io_service_);
 
   // Once the connection request comes, start asynchronously receiving the file.
@@ -277,7 +277,7 @@ void Session::acceptFile(
 
 void Session::receiveFile(const std::shared_ptr<fs::File>& file,
                           const std::shared_ptr<std::string>& filepath,
-                          const std::shared_ptr<Socket>& socket) noexcept {
+                          const std::shared_ptr<Socket>& socket) {
   auto buffer = std::make_shared<fs::File>();
   buffer->resize(1024 * 1024 * 1);
 
@@ -301,7 +301,7 @@ void Session::receiveFile(const std::shared_ptr<fs::File>& file,
 }
 
 void Session::saveFile(const std::shared_ptr<fs::File>& file,
-                       const std::shared_ptr<std::string>& filepath) noexcept {
+                       const std::shared_ptr<std::string>& filepath) {
   ftp_data_serializer_.post([me = shared_from_this(), file, filepath]() {
     const auto status = me->filesystem_.add(*filepath, *file);
     switch (status) {

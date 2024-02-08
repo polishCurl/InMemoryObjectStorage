@@ -43,7 +43,7 @@ class FtpParser : public IValidate {
    *
    * \param buffer Raw input buffer containing FTP request.
    */
-  FtpParser(const std::string& buffer) noexcept;
+  explicit FtpParser(const std::string& buffer) noexcept;
 
   ~FtpParser() = default;
   FtpParser(const FtpParser& other) = delete;
@@ -56,21 +56,24 @@ class FtpParser : public IValidate {
    *
    * \return True if FTP request was successfully parsed, false otherwise.
    */
-  inline bool isValid() const noexcept override { return valid_; }
+  [[nodiscard]] inline bool isValid() const noexcept override { return valid_; }
 
   /**
    * \brief Return FTP command.
    *
    * \return FTP command.
    */
-  inline FtpCommand getCommand() const noexcept { return command_; }
+  [[nodiscard]] inline FtpCommand getCommand() const noexcept {
+    return command_;
+  }
 
   /**
    * \brief Return the list of tokens (FTP command name and all arguments).
    *
    * \return FTP command tokens.
    */
-  inline const std::vector<std::string_view>& getTokens() const noexcept {
+  [[nodiscard]] inline const std::vector<std::string_view>& getTokens()
+      const noexcept {
     return tokens_;
   }
 

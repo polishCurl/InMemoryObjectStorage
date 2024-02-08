@@ -39,7 +39,7 @@ class IFilesystem {
    *
    * \return Operation result and the file (if successfull).
    */
-  virtual std::pair<Status, const File&> get(
+  [[nodiscard]] virtual std::pair<Status, const File&> get(
       const std::string& path) const noexcept = 0;
 
   /**
@@ -57,7 +57,7 @@ class IFilesystem {
    *
    * \return List of all objects stored in the filestore.
    */
-  virtual FileList list() const noexcept = 0;
+  [[nodiscard]] virtual FileList list() const noexcept = 0;
 
   /**
    * \brief Remove file from the specified path.

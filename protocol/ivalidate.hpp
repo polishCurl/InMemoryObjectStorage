@@ -19,7 +19,7 @@ class IValidate {
    *
    * \return True if packet is valid, false otherwise.
    */
-  virtual bool isValid() const = 0;
+  [[nodiscard]] virtual bool isValid() const = 0;
 };
 
 }  // namespace protocol
