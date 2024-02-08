@@ -30,6 +30,7 @@ using Fs = std::unordered_map<std::string, File>;
 class MemoryFs : public IFilesystem {
  public:
   MemoryFs() = default;
+  ~MemoryFs() = default;
 
   // MemoryFs is non-copyable and non-moveable because the semantics of
   // these operations would not be trivial. Moveover, there is no req to allow

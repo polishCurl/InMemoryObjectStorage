@@ -45,6 +45,7 @@ class FtpParser : public IValidate {
    */
   FtpParser(const std::string& buffer) noexcept;
 
+  ~FtpParser() = default;
   FtpParser(const FtpParser& other) = delete;
   FtpParser(FtpParser&& other) = delete;
   FtpParser& operator=(const FtpParser& other) = delete;

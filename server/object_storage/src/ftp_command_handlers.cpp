@@ -23,7 +23,8 @@ void Session::handleFtp(const std::string& request) noexcept {
     ftp_handlers_.at(ftp_command)(parser);
     last_ftp_command_ = ftp_command;
   } else {
-    sendMessage(FtpResponse(FtpReplyCode::SYNTAX_ERROR_UNRECOGNIZED_COMMAND));
+    sendMessage(static_cast<std::string>(
+        FtpResponse(FtpReplyCode::SYNTAX_ERROR_UNRECOGNIZED_COMMAND)));
   }
 
   receiveMessage();
@@ -34,23 +35,23 @@ void Session::handleFtpUser(const protocol::ftp::request::FtpParser& parser) {
   logged_in_user_.reset();
 
   if (parser.getTokens().size() != 2) {
-    sendMessage(FtpResponse(FtpReplyCode::SYNTAX_ERROR_PARAMETERS,
-                            "No username provided"));
+    sendMessage(static_cast<std::string>(FtpResponse(
+        FtpReplyCode::SYNTAX_ERROR_PARAMETERS, "No username provided")));
   } else {
     last_username_ = parser.getTokens()[1];
-    sendMessage(
-        FtpResponse(FtpReplyCode::USER_NAME_OK, "Please provide password"));
+    sendMessage(static_cast<std::string>(
+        FtpResponse(FtpReplyCode::USER_NAME_OK, "Please provide password")));
   }
 }
 
 void Session::handleFtpPass(const protocol::ftp::request::FtpParser& parser) {
   if (last_ftp_command_ != FtpCommand::User) {
-    sendMessage(FtpResponse(FtpReplyCode::COMMANDS_BAD_SEQUENCE,
-                            "Please specify username first"));
+    sendMessage(static_cast<std::string>(FtpResponse(
+        FtpReplyCode::COMMANDS_BAD_SEQUENCE, "Please specify username first")));
 
   } else if (parser.getTokens().size() != 2) {
-    sendMessage(FtpResponse(FtpReplyCode::SYNTAX_ERROR_PARAMETERS,
-                            "No password provided"));
+    sendMessage(static_cast<std::string>(FtpResponse(
+        FtpReplyCode::SYNTAX_ERROR_PARAMETERS, "No password provided")));
   }
 
   else {
@@ -58,22 +59,25 @@ void Session::handleFtpPass(const protocol::ftp::request::FtpParser& parser) {
     const User user{last_username_, std::string{parser.getTokens()[1]}};
     if (user_database_.verify(user)) {
       logged_in_user_ = user;
-      sendMessage(
-          FtpResponse(FtpReplyCode::USER_LOGGED_IN, "Login successful"));
+      sendMessage(static_cast<std::string>(
+          FtpResponse(FtpReplyCode::USER_LOGGED_IN, "Login successful")));
     } else {
-      sendMessage(FtpResponse(FtpReplyCode::NOT_LOGGED_IN, "Failed to log in"));
+      sendMessage(static_cast<std::string>(
+          FtpResponse(FtpReplyCode::NOT_LOGGED_IN, "Failed to log in")));
     }
   }
 }
 
 void Session::handleFtpList(const protocol::ftp::request::FtpParser& parser) {
   if (!logged_in_user_) {
-    sendMessage(FtpResponse(FtpReplyCode::NOT_LOGGED_IN, "Not logged in"));
+    sendMessage(static_cast<std::string>(
+        FtpResponse(FtpReplyCode::NOT_LOGGED_IN, "Not logged in")));
     return;
   }
 
-  sendMessage(FtpResponse(FtpReplyCode::FILE_STATUS_OK_OPENING_DATA_CONNECTION,
-                          "Listing all objects stored"));
+  sendMessage(static_cast<std::string>(
+      FtpResponse(FtpReplyCode::FILE_STATUS_OK_OPENING_DATA_CONNECTION,
+                  "Listing all objects stored")));
 
   // Serialize the file list into a single text file.
   const auto filepaths = filesystem_.list();
@@ -90,9 +94,9 @@ void Session::handleFtpList(const protocol::ftp::request::FtpParser& parser) {
       ftp_data_serializer_.wrap([data_socket, directory_listing,
                                  me = shared_from_this()](auto error_code) {
         if (error_code) {
-          me->sendMessage(
+          me->sendMessage(static_cast<std::string>(
               FtpResponse(FtpReplyCode::TRANSFER_ABORTED,
-                          "Data transfer aborted: " + error_code.message()));
+                          "Data transfer aborted: " + error_code.message())));
           return;
         }
 
@@ -106,13 +110,15 @@ void Session::handleFtpList(const protocol::ftp::request::FtpParser& parser) {
 
 void Session::handleFtpRetr(const protocol::ftp::request::FtpParser& parser) {
   if (!logged_in_user_) {
-    sendMessage(FtpResponse(FtpReplyCode::NOT_LOGGED_IN, "Not logged in"));
+    sendMessage(static_cast<std::string>(
+        FtpResponse(FtpReplyCode::NOT_LOGGED_IN, "Not logged in")));
     return;
   }
 
   if (!ftp_data_acceptor_.is_open()) {
-    sendMessage(FtpResponse(FtpReplyCode::ERROR_OPENING_DATA_CONNECTION,
-                            "Error opening data connection"));
+    sendMessage(static_cast<std::string>(
+        FtpResponse(FtpReplyCode::ERROR_OPENING_DATA_CONNECTION,
+                    "Error opening data connection")));
     return;
   }
 
@@ -124,13 +130,13 @@ void Session::handleFtpRetr(const protocol::ftp::request::FtpParser& parser) {
 
   switch (status) {
     case fs::Status::Success:
-      sendMessage(
+      sendMessage(static_cast<std::string>(
           FtpResponse(FtpReplyCode::FILE_STATUS_OK_OPENING_DATA_CONNECTION,
-                      "Sending file"));
+                      "Sending file")));
       break;
     default:
-      sendMessage(
-          FtpResponse(FtpReplyCode::ACTION_NOT_TAKEN, "File not found"));
+      sendMessage(static_cast<std::string>(
+          FtpResponse(FtpReplyCode::ACTION_NOT_TAKEN, "File not found")));
       return;
   }
 
@@ -143,9 +149,9 @@ void Session::handleFtpRetr(const protocol::ftp::request::FtpParser& parser) {
       ftp_data_serializer_.wrap([data_socket, file_to_send,
                                  me = shared_from_this()](auto error_code) {
         if (error_code) {
-          me->sendMessage(
+          me->sendMessage(static_cast<std::string>(
               FtpResponse(FtpReplyCode::TRANSFER_ABORTED,
-                          "Data transfer aborted: " + error_code.message()));
+                          "Data transfer aborted: " + error_code.message())));
           return;
         }
 
@@ -159,24 +165,27 @@ void Session::handleFtpRetr(const protocol::ftp::request::FtpParser& parser) {
 
 void Session::handleFtpStor(const protocol::ftp::request::FtpParser& parser) {
   if (!logged_in_user_) {
-    sendMessage(FtpResponse(FtpReplyCode::NOT_LOGGED_IN, "Not logged in"));
+    sendMessage(static_cast<std::string>(
+        FtpResponse(FtpReplyCode::NOT_LOGGED_IN, "Not logged in")));
     return;
   }
 
   if (parser.getTokens().size() != 2) {
-    sendMessage(FtpResponse(FtpReplyCode::SYNTAX_ERROR_PARAMETERS,
-                            "No file specified"));
+    sendMessage(static_cast<std::string>(FtpResponse(
+        FtpReplyCode::SYNTAX_ERROR_PARAMETERS, "No file specified")));
     return;
   }
 
   if (!ftp_data_acceptor_.is_open()) {
-    sendMessage(FtpResponse(FtpReplyCode::ERROR_OPENING_DATA_CONNECTION,
-                            "Faile to open data connection"));
+    sendMessage(static_cast<std::string>(
+        FtpResponse(FtpReplyCode::ERROR_OPENING_DATA_CONNECTION,
+                    "Faile to open data connection")));
     return;
   }
 
-  sendMessage(FtpResponse{FtpReplyCode::FILE_STATUS_OK_OPENING_DATA_CONNECTION,
-                          "Ready to receive"});
+  sendMessage(static_cast<std::string>(
+      FtpResponse{FtpReplyCode::FILE_STATUS_OK_OPENING_DATA_CONNECTION,
+                  "Ready to receive"}));
 
   const auto filepath = std::make_shared<std::string>(
       current_working_dir_ + std::string{parser.getTokens()[1]});
@@ -186,7 +195,8 @@ void Session::handleFtpStor(const protocol::ftp::request::FtpParser& parser) {
 
 void Session::handleFtpDele(const protocol::ftp::request::FtpParser& parser) {
   if (!logged_in_user_) {
-    sendMessage(FtpResponse(FtpReplyCode::NOT_LOGGED_IN, "Not logged in"));
+    sendMessage(static_cast<std::string>(
+        FtpResponse(FtpReplyCode::NOT_LOGGED_IN, "Not logged in")));
     return;
   }
 
@@ -195,12 +205,12 @@ void Session::handleFtpDele(const protocol::ftp::request::FtpParser& parser) {
   switch (status) {
     case fs::Status::Success:
       BOOST_LOG_TRIVIAL(info) << "Deleted file: " << filepath;
-      sendMessage(
-          FtpResponse(FtpReplyCode::FILE_ACTION_COMPLETED, "File deleted"));
+      sendMessage(static_cast<std::string>(
+          FtpResponse(FtpReplyCode::FILE_ACTION_COMPLETED, "File deleted")));
       break;
     default:
-      sendMessage(
-          FtpResponse(FtpReplyCode::ACTION_NOT_TAKEN, "Unable to delete file"));
+      sendMessage(static_cast<std::string>(FtpResponse(
+          FtpReplyCode::ACTION_NOT_TAKEN, "Unable to delete file")));
 
       break;
   }
@@ -208,13 +218,14 @@ void Session::handleFtpDele(const protocol::ftp::request::FtpParser& parser) {
 
 void Session::handleFtpPasv(const protocol::ftp::request::FtpParser& parser) {
   if (!logged_in_user_) {
-    sendMessage(FtpResponse(FtpReplyCode::NOT_LOGGED_IN, "Not logged in"));
+    sendMessage(static_cast<std::string>(
+        FtpResponse(FtpReplyCode::NOT_LOGGED_IN, "Not logged in")));
     return;
   }
 
   if (!configureDataAcceptor()) {
-    sendMessage(FtpResponse(FtpReplyCode::SERVICE_NOT_AVAILABLE,
-                            "Passive mode not supported"));
+    sendMessage(static_cast<std::string>(FtpResponse(
+        FtpReplyCode::SERVICE_NOT_AVAILABLE, "Passive mode not supported")));
   } else {
     // Respond to FTP client with IP address and port for data connection.
     const auto ip_bytes = socket_.local_endpoint().address().to_v4().to_bytes();
@@ -226,8 +237,9 @@ void Session::handleFtpPasv(const protocol::ftp::request::FtpParser& parser) {
       stream << static_cast<unsigned int>(byte) << ",";
     }
     stream << ((port >> 8) & 0xff) << "," << (port & 0xff) << ")";
-    sendMessage(FtpResponse(FtpReplyCode::ENTERING_PASSIVE_MODE,
-                            "Entering passive mode " + stream.str()));
+    sendMessage(static_cast<std::string>(
+        FtpResponse(FtpReplyCode::ENTERING_PASSIVE_MODE,
+                    "Entering passive mode " + stream.str())));
   }
 }
 
@@ -235,9 +247,11 @@ void Session::handleFtpType(const protocol::ftp::request::FtpParser& parser) {
   // Simplified handling of FTP TYPE command. We just accept any data
   // representation type.
   if (!logged_in_user_) {
-    sendMessage(FtpResponse(FtpReplyCode::NOT_LOGGED_IN, "Not logged in"));
+    sendMessage(static_cast<std::string>(
+        FtpResponse(FtpReplyCode::NOT_LOGGED_IN, "Not logged in")));
   } else {
-    sendMessage(FtpResponse(FtpReplyCode::COMMAND_OK, "Mode switched"));
+    sendMessage(static_cast<std::string>(
+        FtpResponse(FtpReplyCode::COMMAND_OK, "Mode switched")));
   }
 }
 
@@ -246,20 +260,21 @@ void Session::handleFtpQuit(const protocol::ftp::request::FtpParser& parser) {
   current_working_dir_ = '/';
   last_ftp_command_ = FtpCommand::Unrecognized;
   last_username_.clear();
-  sendMessage(FtpResponse(FtpReplyCode::SERVICE_CLOSING_CONTROL_CONNECTION,
-                          "Connection closed"));
+  sendMessage(static_cast<std::string>(FtpResponse(
+      FtpReplyCode::SERVICE_CLOSING_CONTROL_CONNECTION, "Connection closed")));
 }
 
 void Session::handleFtpCwd(const protocol::ftp::request::FtpParser& parser) {
   if (!logged_in_user_) {
-    sendMessage(FtpResponse(FtpReplyCode::NOT_LOGGED_IN, "Not logged in"));
+    sendMessage(static_cast<std::string>(
+        FtpResponse(FtpReplyCode::NOT_LOGGED_IN, "Not logged in")));
   } else if (parser.getTokens().size() != 2) {
-    sendMessage(FtpResponse(FtpReplyCode::SYNTAX_ERROR_PARAMETERS,
-                            "No directory specified"));
+    sendMessage(static_cast<std::string>(FtpResponse(
+        FtpReplyCode::SYNTAX_ERROR_PARAMETERS, "No directory specified")));
   } else {
     current_working_dir_ += std::string{parser.getTokens()[1]} + '/';
-    sendMessage(FtpResponse{FtpReplyCode::FILE_ACTION_COMPLETED,
-                            "Working directory changed"});
+    sendMessage(static_cast<std::string>(FtpResponse{
+        FtpReplyCode::FILE_ACTION_COMPLETED, "Working directory changed"}));
   }
 }
 

@@ -117,7 +117,7 @@ class HttpResponse : public ISerialize {
    *
    * \param status HTTP status.
    */
-  HttpResponse(HttpStatus status) noexcept;
+  explicit HttpResponse(HttpStatus status) noexcept;
 
   /**
    * \brief Create HTTP response with the given status and reason phrase.
@@ -161,7 +161,7 @@ class HttpResponse : public ISerialize {
    *
    * \return String representation of HTTP response.
    */
-  operator std::string() const override;
+  explicit operator std::string() const override;
 
  private:
   /// HTTP version used.

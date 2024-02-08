@@ -81,14 +81,14 @@ class FtpResponse : public ISerialize {
    *
    * \param code FTP reply code.
    */
-  FtpResponse(FtpReplyCode code) noexcept : code_{code}, text_{""} {}
+  explicit FtpResponse(FtpReplyCode code) noexcept : code_{code}, text_{""} {}
 
   /**
    * \brief Convert FTP reply to string.
    *
    * \return String representation of FTP reply.
    */
-  inline operator std::string() const override {
+  inline explicit operator std::string() const override {
     return std::to_string(static_cast<int>(code_)) + ' ' + text_ + "\r\n";
   }
 

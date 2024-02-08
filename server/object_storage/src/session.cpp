@@ -86,8 +86,9 @@ void Session::start() noexcept {
   const auto client_port = socket_.remote_endpoint().port();
   if ((client_port >= ftp_port_range_.min_port) &&
       (client_port < ftp_port_range_.max_port))
-    sendMessage(FtpResponse(FtpReplyCode::SERVICE_READY_FOR_NEW_USER,
-                            "Welcome to ObjectStorage server"));
+    sendMessage(static_cast<std::string>(
+        FtpResponse(FtpReplyCode::SERVICE_READY_FOR_NEW_USER,
+                    "Welcome to ObjectStorage server")));
 }
 
 void Session::setTcpNoDelay() noexcept {
@@ -232,8 +233,8 @@ void Session::sendFtpDataHandler(
       data_socket->shutdown(Socket::shutdown_both, error_code);
       data_socket->close(error_code);
 
-      me->sendMessage(
-          FtpResponse(FtpReplyCode::CLOSING_DATA_CONNECTION, "Done"));
+      me->sendMessage(static_cast<std::string>(
+          FtpResponse(FtpReplyCode::CLOSING_DATA_CONNECTION, "Done")));
     }
   });
 }
@@ -263,9 +264,9 @@ void Session::acceptFile(
       ftp_data_serializer_.wrap([data_socket, file, filepath,
                                  me = shared_from_this()](auto error_code) {
         if (error_code) {
-          me->sendMessage(
+          me->sendMessage(static_cast<std::string>(
               FtpResponse(FtpReplyCode::TRANSFER_ABORTED,
-                          "Data transfer aborted: " + error_code.message()));
+                          "Data transfer aborted: " + error_code.message())));
           return;
         }
 
@@ -306,12 +307,12 @@ void Session::saveFile(const std::shared_ptr<fs::File>& file,
     switch (status) {
       case fs::Status::Success:
         BOOST_LOG_TRIVIAL(info) << "Saved file: " << *filepath;
-        me->sendMessage(
-            FtpResponse{FtpReplyCode::CLOSING_DATA_CONNECTION, "File saved"});
+        me->sendMessage(static_cast<std::string>(
+            FtpResponse{FtpReplyCode::CLOSING_DATA_CONNECTION, "File saved"}));
         break;
       default:
-        me->sendMessage(
-            FtpResponse(FtpReplyCode::FILE_ACTION_NOT_TAKEN, "File not saved"));
+        me->sendMessage(static_cast<std::string>(FtpResponse(
+            FtpReplyCode::FILE_ACTION_NOT_TAKEN, "File not saved")));
         break;
     }
 

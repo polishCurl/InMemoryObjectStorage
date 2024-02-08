@@ -29,12 +29,13 @@ void Session::handleHttp(std::string& request) noexcept {
   HttpParser parser{request};
   if (!parser.isValid()) {
     BOOST_LOG_TRIVIAL(error) << "Failed to parse HTTP request:\n" << request;
-    sendMessage(HttpResponse{HttpStatus::BadRequest});
+    sendMessage(static_cast<std::string>(HttpResponse{HttpStatus::BadRequest}));
 
   } else if (!authHttpUser(parser)) {
-    sendMessage(HttpResponse{HttpStatus::Unauthorized,
-                             HttpResponseHeaders{{"WWW-Authenticate", "Basic"},
-                                                 {"Content-Length", "0"}}});
+    sendMessage(static_cast<std::string>(
+        HttpResponse{HttpStatus::Unauthorized,
+                     HttpResponseHeaders{{"WWW-Authenticate", "Basic"},
+                                         {"Content-Length", "0"}}}));
   } else {
     http_handlers_.at(parser.getMethod())(parser);
   }
@@ -65,7 +66,8 @@ void Session::handleHttpGet(const HttpParser& parser) {
     for (const auto& filepath : filepaths) {
       response += filepath + '\n';
     }
-    sendMessage(HttpResponse{HttpStatus::Ok, response});
+    sendMessage(
+        static_cast<std::string>(HttpResponse{HttpStatus::Ok, response}));
 
   } else {
     // Otherwise, get the file from the filesystem and send it in response (if
@@ -73,13 +75,16 @@ void Session::handleHttpGet(const HttpParser& parser) {
     const auto [status, file] = filesystem_.get(std::string{parser.getUri()});
     switch (status) {
       case fs::Status::Success:
-        sendMessage(HttpResponse{HttpStatus::Ok, file});
+        sendMessage(
+            static_cast<std::string>(HttpResponse{HttpStatus::Ok, file}));
         break;
       case fs::Status::FileNotFound:
-        sendMessage(HttpResponse{HttpStatus::NotFound});
+        sendMessage(
+            static_cast<std::string>(HttpResponse{HttpStatus::NotFound}));
         break;
       default:
-        sendMessage(HttpResponse{HttpStatus::InternalServerError});
+        sendMessage(static_cast<std::string>(
+            HttpResponse{HttpStatus::InternalServerError}));
         break;
     }
   }
@@ -89,7 +94,7 @@ void Session::handleHttpGet(const HttpParser& parser) {
 
 void Session::handleHttpPut(const HttpParser& parser) {
   if (parser["expect"] && (*parser["expect"] == "100-continue")) {
-    sendMessage(HttpResponse{HttpStatus::Continue});
+    sendMessage(static_cast<std::string>(HttpResponse{HttpStatus::Continue}));
   }
 
   const auto file_size = parser.getResourceSize();
@@ -103,19 +108,23 @@ void Session::handleHttpPut(const HttpParser& parser) {
       serializer_.wrap([me = shared_from_this(), file, filepath](
                            ErrorCode error_code, std::size_t length) {
         if (error_code) {
-          me->sendMessage(HttpResponse{HttpStatus::InternalServerError});
+          me->sendMessage(static_cast<std::string>(
+              HttpResponse{HttpStatus::InternalServerError}));
         } else {
           const auto status = me->filesystem_.add(std::string{filepath}, *file);
           switch (status) {
             case fs::Status::Success:
               BOOST_LOG_TRIVIAL(info) << "Saved file: " << filepath;
-              me->sendMessage(HttpResponse{HttpStatus::Created});
+              me->sendMessage(
+                  static_cast<std::string>(HttpResponse{HttpStatus::Created}));
               break;
             case fs::Status::AlreadyExists:
-              me->sendMessage(HttpResponse{HttpStatus::NotFound});
+              me->sendMessage(
+                  static_cast<std::string>(HttpResponse{HttpStatus::NotFound}));
               break;
             default:
-              me->sendMessage(HttpResponse{HttpStatus::InternalServerError});
+              me->sendMessage(static_cast<std::string>(
+                  HttpResponse{HttpStatus::InternalServerError}));
               break;
           }
         }
@@ -130,13 +139,14 @@ void Session::handleHttpDelete(const HttpParser& parser) {
   switch (status) {
     case fs::Status::Success:
       BOOST_LOG_TRIVIAL(info) << "Deleted file: " << filepath;
-      sendMessage(HttpResponse{HttpStatus::Ok});
+      sendMessage(static_cast<std::string>(HttpResponse{HttpStatus::Ok}));
       break;
     case fs::Status::FileNotFound:
-      sendMessage(HttpResponse{HttpStatus::NotFound});
+      sendMessage(static_cast<std::string>(HttpResponse{HttpStatus::NotFound}));
       break;
     default:
-      sendMessage(HttpResponse{HttpStatus::InternalServerError});
+      sendMessage(static_cast<std::string>(
+          HttpResponse{HttpStatus::InternalServerError}));
       break;
   }
 

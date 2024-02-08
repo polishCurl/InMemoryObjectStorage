@@ -24,11 +24,12 @@ int main(int argc, char *argv[]) {
   }
 
   // Parse command line arguments
-  const std::string address = argv[1];
-  const std::uint16_t port = std::atoi(argv[2]);
-  const auto thread_count = std::atoi(argv[3]);
-  const auto authenticate = std::string{argv[4]} == std::string{"auth"};
-  const auto ftp_port_range = utils::split(argv[5], "-");
+  const std::string address = argv[1];            // NOLINT
+  const std::uint16_t port = std::atoi(argv[2]);  // NOLINT
+  const auto thread_count = std::atoi(argv[3]);   // NOLINT
+  const auto authenticate =
+      std::string{argv[4]} == std::string{"auth"};         // NOLINT
+  const auto ftp_port_range = utils::split(argv[5], "-");  // NOLINT
   std::uint16_t ftp_port_min = std::atoi(ftp_port_range[0].data());
   std::uint16_t ftp_port_max = std::atoi(ftp_port_range[1].data());
 

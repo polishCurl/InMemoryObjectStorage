@@ -19,7 +19,7 @@ class ISerialize {
    *
    * \return String representation of object.
    */
-  virtual operator std::string() const = 0;
+  virtual explicit operator std::string() const = 0;
 };
 
 }  // namespace protocol
